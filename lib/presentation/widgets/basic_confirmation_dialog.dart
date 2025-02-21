@@ -49,7 +49,6 @@ class BasicConfirmationDialog extends StatelessWidget {
     final double effectiveTitleFontSize =
         titleFontSize ?? screenSize.width * 0.07;
     final double effectiveButtonSize = buttonSize ?? screenSize.width * 0.15;
-    final double effectiveSpacing = buttonSpacing ?? screenSize.width * 0.05;
     final double effectiveMinHeight =
         dialogMinHeight ?? screenSize.height * 0.25;
 
