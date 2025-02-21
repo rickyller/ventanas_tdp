@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ventanas_tdp/presentation/widgets/basic_confirmation_dialog.dart';
 
 class TeamSelectorScreen extends StatelessWidget {
   final String leftTeamName;
@@ -11,7 +12,7 @@ class TeamSelectorScreen extends StatelessWidget {
   final List<bool> rightIsTitular;
 
   const TeamSelectorScreen({
-    super.key,
+    Key? key,
     required this.leftTeamName,
     required this.rightTeamName,
     required this.leftNumbers,
@@ -20,93 +21,64 @@ class TeamSelectorScreen extends StatelessWidget {
     required this.rightCategories,
     required this.leftIsTitular,
     required this.rightIsTitular,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Tamaño de la pantalla para cálculos responsivos.
     final size = MediaQuery.of(context).size;
-
-    // Tamaño de fuente dinámico para el diálogo.
-    final double dialogFontSize = size.width * 0.035;
+    // Tamaño de fuente para el diálogo.
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () async {
-            final bool? confirm = await showDialog<bool>(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  backgroundColor: Colors.grey[850],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56), // Altura estándar
+        child: Container(
+          color: Colors.grey[900],
+          child: SafeArea(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () async {
+                      final bool? confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) {
+                          return BasicConfirmationDialog(
+                            title: "Confirmar abandono",
+                            confirmText: "",
+                            cancelText: "",
+                            onConfirm: () => Navigator.pop(context, true),
+                            onCancel: () => Navigator.pop(context, false),
+                            backgroundColor: Colors.grey[850]!,
+                            confirmButtonColor:
+                                const Color.fromARGB(255, 18, 108, 210),
+                            cancelButtonColor:
+                                const Color.fromARGB(255, 242, 20, 20),
+                            confirmIcon:
+                                const Icon(Icons.check, color: Colors.white),
+                            cancelIcon:
+                                const Icon(Icons.close, color: Colors.white),
+                            buttonSpacing: 4.0,
+                          );
+                        },
+                      );
+                      if (confirm == true) {
+                        Navigator.pushNamed(context, '/');
+                      }
+                    },
                   ),
-                  title: Text(
-                    "Confirmar abandono",
-                    style: TextStyle(
-                        fontSize: dialogFontSize * 1.3,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  content: Text(
-                    "¿Seguro que deseas abandonar? Se perderán los jugadores registrados.",
-                    style: TextStyle(
-                      fontSize: dialogFontSize,
-                      color: Colors.white70,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  // Aquí alineamos los botones en columna (vertical).
-                  actionsAlignment: MainAxisAlignment.center,
-                  actions: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(
-                            "Cancelar",
-                            style: TextStyle(
-                              fontSize: dialogFontSize * 1.3,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(
-                            "Aceptar",
-                            style: TextStyle(
-                              fontSize: dialogFontSize * 1.3,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
-            );
-            if (confirm == true) {
-              Navigator.pushNamed(context, '/');
-            }
-          },
-        ),
-        title: Text(
-          'Selecciona un equipo',
-          style: TextStyle(
-            fontSize: size.width * 0.04, // Tamaño dinámico según el ancho.
-            fontWeight: FontWeight.bold,
+                  const SizedBox(width: 4),
+
+                ],
+              ),
+            ),
           ),
         ),
-        centerTitle: true,
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -125,13 +97,14 @@ class TeamSelectorScreen extends StatelessWidget {
                         Text(
                           "0 cambios en 0 ventanas",
                           style: TextStyle(
-                            fontSize: size.width * 0.04,
+                            fontSize: size.width * 0.055,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
+                        // Botón para el equipo izquierdo (local)
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
@@ -151,7 +124,7 @@ class TeamSelectorScreen extends StatelessWidget {
                               context,
                               '/localTeamChanges',
                               arguments: {
-                                'team': 'left',
+                                'teamName': leftTeamName,
                                 'numbers': leftNumbers,
                                 'categories': leftCategories,
                                 'isTitular': leftIsTitular,
@@ -175,7 +148,7 @@ class TeamSelectorScreen extends StatelessWidget {
                         Text(
                           "0 cambios en 0 ventanas",
                           style: TextStyle(
-                            fontSize: size.width * 0.04,
+                            fontSize: size.width * 0.055,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),

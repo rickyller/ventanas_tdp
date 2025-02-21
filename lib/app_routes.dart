@@ -14,7 +14,7 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => const InitialScreen(
             teamLeftInitials: 'Local',
-            teamRightInitials: 'Visitante',
+            teamRightInitials: 'Visita',
           ),
         );
       // Ruta para la selección de equipos.
@@ -23,7 +23,7 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => TeamSelectorScreen(
             leftTeamName: args?['leftTeamName'] ?? 'Local',
-            rightTeamName: args?['rightTeamName'] ?? 'Visitante',
+            rightTeamName: args?['rightTeamName'] ?? 'Visita',
             leftNumbers: args != null && args['leftNumbers'] != null
                 ? List<String>.from(args['leftNumbers'])
                 : <String>[],

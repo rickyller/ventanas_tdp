@@ -460,12 +460,14 @@ class _InitialScreenState extends State<InitialScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            title: const Text(
+                            title: const Center(
+                              child: Text(
                               "Error de validación",
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
+                              ),
                               ),
                             ),
                             content: SingleChildScrollView(
@@ -496,15 +498,17 @@ class _InitialScreenState extends State<InitialScreen> {
                               ),
                             ),
                             actions: [
-                              TextButton(
+                              Center(
+                              child: TextButton(
                                 onPressed: () => Navigator.of(context).pop(),
                                 child: const Text(
-                                  "Aceptar",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.blue,
-                                  ),
+                                "Aceptar",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.blue,
                                 ),
+                                ),
+                              ),
                               ),
                             ],
                           );

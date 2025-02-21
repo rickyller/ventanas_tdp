@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ventanas_tdp/presentation/widgets/substitute_selection_dialog.dart';
+import 'package:ventanas_tdp/presentation/widgets/basic_confirmation_dialog.dart';
 
 /// Clase para almacenar la información de una sustitución,
 /// de modo que podamos revertirla.
@@ -31,15 +32,22 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
   final List<SubstitutionAction> _substitutionStack = [];
 
   bool _isInitialized = false;
+  // Se espera que este valor provenga del argumento 'teamName'
+  String teamName = 'Local';
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_isInitialized) {
       final args = ModalRoute.of(context)?.settings.arguments as Map?;
+      if (args != null) {
+        print('Argumentos recibidos: $args');
+        if (args.containsKey('teamName')) {
+          teamName = args['teamName'] as String;
+        }
+      }
       final numbers = List<String>.from(args?['numbers'] ?? []);
       final categories = List<String?>.from(args?['categories'] ?? []);
-
       final isTitularList = (args?['isTitular'] != null &&
               (args?['isTitular'] as List).isNotEmpty)
           ? List<bool>.from(args?['isTitular'])
@@ -74,159 +82,71 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
   void _undoLastSubstitution() {
     if (_substitutionStack.isNotEmpty) {
       final lastAction = _substitutionStack.removeLast();
-
-      // Revertir la sustitución en titulares y suplentes
       final revertIndex = lastAction.titularIndex;
-      titulares[revertIndex] = lastAction.oldTitular; // vuelve el que salió
-      suplentes.add(lastAction.newTitular); // el que entró regresa a suplentes
-
-      // Quitar la última línea del listado de cambios
+      titulares[revertIndex] = lastAction.oldTitular;
+      suplentes.add(lastAction.newTitular);
       if (substitutionChanges.isNotEmpty) {
         substitutionChanges.removeLast();
       }
-
-      // Refrescar la UI
       setState(() {});
     }
   }
 
-  /// Diálogo de confirmación, usando un StatefulBuilder para
-  /// poder refrescar el diálogo cuando se deshace la última sustitución.
+  /// Diálogo de confirmación usando BasicConfirmationDialog, sin título,
+  /// con íconos pequeños para cancelar, deshacer y confirmar.
+  /// Además, si existen sustituciones se muestran en el área del título.
   Future<bool?> _showConfirmDialog({
-  required BuildContext context,
-  required double dialogFontSize,
-  required String title,
-  bool showSubstitutions = false,
-}) {
-  final watchSize = MediaQuery.of(context).size;
-  final double maxDialogWidth = watchSize.width * 0.9;
-  final double maxDialogHeight = watchSize.height * 0.9;
-  final double contentFontSize = dialogFontSize;
-  // Reducimos un poco la escala para evitar overflow en pantallas pequeñas
-  final double buttonFontSize = dialogFontSize * 0.8;
+    required BuildContext context,
+    required double dialogFontSize,
+    required String title,
+    bool showSubstitutions = false,
+  }) {
+    final watchSize = MediaQuery.of(context).size;
+    final double iconSize = watchSize.width * 0.07;
+    // Une las sustituciones en una sola línea con " | " como separador
+    final String titleText =
+        (showSubstitutions && substitutionChanges.isNotEmpty)
+            ? substitutionChanges.join("\n")
+            : "";
 
-  return showDialog<bool>(
-    context: context,
-    builder: (context) {
-      // Usamos StatefulBuilder para refrescar el diálogo al deshacer
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          return Dialog(
-            backgroundColor: Colors.grey[850],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Container(
-              // Limita el tamaño máximo del diálogo
-              constraints: BoxConstraints(
-                maxWidth: maxDialogWidth,
-                maxHeight: maxDialogHeight,
-              ),
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: contentFontSize * 1.2,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return BasicConfirmationDialog(
+              title: titleText,
+              confirmText: "",
+              cancelText: "",
+              onConfirm: () => Navigator.pop(context, true),
+              onCancel: () => Navigator.pop(context, false),
+              backgroundColor: Colors.grey[850]!,
+              confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
+              cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
+              confirmIcon:
+                  Icon(Icons.check, color: Colors.white, size: iconSize),
+              cancelIcon:
+                  Icon(Icons.close, color: Colors.white, size: iconSize),
+              middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
+              onMiddlePressed: () {
+                _undoLastSubstitution();
+                setDialogState(() {});
+              },
+              content: const SizedBox.shrink(),
+              buttonSize: watchSize.width * 0.12,
+              buttonSpacing: watchSize.width * 0.01,
+              titleFontSize: watchSize.width * 0.045,
+              dialogWidthFactor: 1,
+              dialogMinHeight:
+                  watchSize.height * 0.45, // Ejemplo de altura personalizada
+            );
+          },
+        );
+      },
+    );
+  }
 
-                  // Título "Sustituciones:" si hay cambios
-                  if (showSubstitutions && substitutionChanges.isNotEmpty) ...[
-                    Text(
-                      "Sustituciones:",
-                      style: TextStyle(
-                        fontSize: contentFontSize,
-                        color: Colors.white70,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-
-                  // Lista de sustituciones (scrollable)
-                  Expanded(
-                    child: showSubstitutions && substitutionChanges.isNotEmpty
-                        ? SingleChildScrollView(
-                            child: Column(
-                              children: substitutionChanges
-                                  .map(
-                                    (change) => Text(
-                                      change,
-                                      style: TextStyle(
-                                        fontSize: contentFontSize,
-                                        color: Colors.white70,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Fila con "No", icono "Deshacer" y "Sí"
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Botón "No"
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(
-                            "No",
-                            style: TextStyle(
-                              fontSize: buttonFontSize * 1.2,
-                              color: Colors.red,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                      // IconButton "Deshacer"
-                      IconButton(
-                        icon: const Icon(Icons.undo, color: Colors.orange),
-                        iconSize: buttonFontSize * 1.8,
-                        tooltip: "Deshacer",
-                        onPressed: () {
-                          _undoLastSubstitution();
-                          setDialogState(() {});
-                        },
-                      ),
-                      // Botón "Sí"
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(
-                            "Sí",
-                            style: TextStyle(
-                              fontSize: buttonFontSize * 1.2,
-                              color: Colors.blue,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
-  /// Manejo del tap en un jugador titular para hacer el cambio
+  /// Manejo del tap en un jugador titular para hacer el cambio.
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -249,8 +169,6 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
             setState(() {
               final substitute = suplentes[selectedIndex];
               final leaving = titulares[titularIndex];
-
-              // Guardar acción para deshacer
               _substitutionStack.add(
                 SubstitutionAction(
                   titularIndex: titularIndex,
@@ -258,14 +176,10 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                   newTitular: substitute,
                 ),
               );
-
-              // Aplicar el cambio
               titulares[titularIndex] = substitute;
               suplentes.removeAt(selectedIndex);
-
-              // Agregar texto descriptivo al historial
               substitutionChanges.add(
-                "Entra ${substitute['number']} sale ${leaving['number']}",
+                "Entra ${substitute['number']}, Sale ${leaving['number']}",
               );
             });
           }
@@ -273,95 +187,149 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
       ),
     );
   }
+Widget buildPlayerTile(
+  Map<String, dynamic> jugador, {
+  required bool esTitular,
+  required VoidCallback? onTap,
+}) {
+  final size = MediaQuery.of(context).size;
+  // La tarjeta ocupará el 25% de la altura de la pantalla
+  final double cardHeight = size.height * 0.25;
+  // Ajusta el radio del avatar en función de la altura de la tarjeta
+  final double avatarRadius = cardHeight * 0.3;
+  // Tamaños de fuente relativos a la altura de la tarjeta
+  final double titleFontSize = cardHeight * 0.25;
+  final double subtitleFontSize = cardHeight * 0.20;
+  // Padding horizontal (fijo) y vertical ajustado para que queden más arriba
+  final double horizontalPadding = cardHeight * 0.2;
+  final double topPadding = cardHeight * 0.05; // menos padding arriba
+  final double bottomPadding = cardHeight * 0.1;
 
-  Widget buildPlayerTile(
-    Map<String, dynamic> jugador, {
-    required bool esTitular,
-    required VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
+  return GestureDetector(
+    onTap: onTap,
+    child: SizedBox(
+      height: cardHeight,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: Colors.grey[850],
           borderRadius: BorderRadius.circular(12),
         ),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: getCircleColor(jugador['category']),
-            child: Text(
-              jugador['number'],
-              style: const TextStyle(color: Colors.white),
-            ),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: horizontalPadding,
+            right: horizontalPadding,
+            top: topPadding,
+            bottom: bottomPadding,
           ),
-          title: Text(
-            'Jugador ${jugador['number']}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          subtitle: Text(
-            jugador['category'] ?? 'Sin categoría',
-            style: const TextStyle(color: Colors.white70),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start, // Alinea al tope
+            children: [
+              CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: getCircleColor(jugador['category']),
+                child: Text(
+                  jugador['number'],
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: cardHeight * 0.2,
+                  ),
+                ),
+              ),
+              SizedBox(width: horizontalPadding * 0.5),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start, // Empieza arriba
+                  children: [
+                    Text(
+                      'Jugador ${jugador['number']}',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: titleFontSize,
+                      ),
+                    ),
+                    SizedBox(height: cardHeight * 0.02),
+                    Text(
+                      jugador['category'] ?? 'S/C',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: subtitleFontSize,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // dialogFontSize se define en función de la dimensión más corta
     final double dialogFontSize = size.shortestSide * 0.040;
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () async {
-            final bool? confirm = await _showConfirmDialog(
-              context: context,
-              dialogFontSize: dialogFontSize,
-              title: "Confirmar abandono",
-              showSubstitutions: false,
-            );
-            if (confirm == true) Navigator.pop(context);
-          },
-        ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Local',
-              style: TextStyle(
-                fontSize: size.shortestSide * 0.07,
-                fontWeight: FontWeight.bold,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(56),
+        child: Container(
+          color: Colors.grey[900],
+          child: SafeArea(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () async {
+                      final bool? confirm = await _showConfirmDialog(
+                        context: context,
+                        dialogFontSize: dialogFontSize,
+                        title: "",
+                        showSubstitutions: false,
+                      );
+                      if (confirm == true) Navigator.pop(context);
+                    },
+                  ),
+                  const SizedBox(width: 4), // Espaciado reducido
+                  Text(
+                    teamName,
+                    style: TextStyle(
+                      fontSize: size.shortestSide * 0.07,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    onPressed: () async {
+                      final bool? confirm = await _showConfirmDialog(
+                        context: context,
+                        dialogFontSize: dialogFontSize,
+                        title: "",
+                        showSubstitutions: true,
+                      );
+                      if (confirm == true) {
+                        Navigator.pop(context, substitutionChanges);
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 9),
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(Icons.check, color: Colors.green),
-              onPressed: () async {
-                final bool? confirm = await _showConfirmDialog(
-                  context: context,
-                  dialogFontSize: dialogFontSize,
-                  title: "Confirmar cambios",
-                  showSubstitutions: true,
-                );
-                if (confirm == true) {
-                  // Retornar la lista de cambios al cerrar
-                  Navigator.pop(context, substitutionChanges);
-                }
-              },
-            ),
-          ],
+          ),
         ),
       ),
       body: ListView(
