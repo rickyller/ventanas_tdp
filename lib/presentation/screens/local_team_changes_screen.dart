@@ -32,12 +32,12 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
   final List<SubstitutionAction> _substitutionStack = [];
 
   bool _isInitialized = false;
-  // Para guardar la información original y poder descartar los cambios.
   late List<Map<String, dynamic>> _originalTitulares;
   late List<Map<String, dynamic>> _originalSuplentes;
 
-  // Se espera que este valor provenga del argumento 'teamName', por defecto "Local".
-  String teamName = 'Local';
+  // Se espera que este valor provenga del argumento 'teamName'
+  // en tu caso, el valor que se le pasa es leftTeamName.
+  late String teamName;
 
   @override
   void didChangeDependencies() {
@@ -46,16 +46,22 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
       final args = ModalRoute.of(context)?.settings.arguments as Map?;
       if (args != null) {
         print('Argumentos recibidos: $args');
+        // Asegúrate de que en tu TeamSelectorScreen estés pasando
+        // 'teamName': widget.leftTeamName como argumento a esta ruta.
         if (args.containsKey('teamName')) {
           teamName = args['teamName'] as String;
+        } else {
+          // En caso de que no exista el argumento, podemos asignar un valor por defecto.
+          teamName = 'Local';
         }
       }
+
       final numbers = List<String>.from(args?['numbers'] ?? []);
       final categories = List<String?>.from(args?['categories'] ?? []);
-      final isTitularList = (args?['isTitular'] != null &&
-              (args?['isTitular'] as List).isNotEmpty)
-          ? List<bool>.from(args?['isTitular'])
-          : List<bool>.filled(numbers.length, true);
+      final isTitularList =
+          (args?['isTitular'] != null && (args?['isTitular'] as List).isNotEmpty)
+              ? List<bool>.from(args?['isTitular'])
+              : List<bool>.filled(numbers.length, true);
 
       titulares = [];
       suplentes = [];
@@ -70,7 +76,6 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
           suplentes.add(jugador);
         }
       }
-      // Guardamos una copia de los datos originales para poder descartar cambios.
       _originalTitulares = List<Map<String, dynamic>>.from(titulares);
       _originalSuplentes = List<Map<String, dynamic>>.from(suplentes);
 
@@ -100,8 +105,115 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     }
   }
 
-  /// Muestra el diálogo de confirmación. El parámetro showSubstitutions indica
-  /// si se deben mostrar los cambios realizados.
+  void _showValidationError(String message) {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double dialogWidth = screenSize.width * 0.8;
+    final double dialogHeight = screenSize.height * 0.5;
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: AlertDialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            backgroundColor: Colors.grey[850],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(screenSize.width * 0.08),
+            ),
+            content: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: dialogWidth,
+                  maxHeight: dialogHeight,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Regla incumplida",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenSize.width * 0.045,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: screenSize.height * 0.02),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: screenSize.width * 0.04,
+                      ),
+                    ),
+                    SizedBox(height: screenSize.height * 0.05),
+                    Align(
+                      alignment: Alignment.center,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: dialogWidth * 0.4,
+                        ),
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blueAccent,
+                            textStyle: TextStyle(
+                              fontSize: screenSize.width * 0.055,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: const Text("Aceptar"),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _validarTitulares() {
+    // Contamos en forma case-insensitive
+    final int countMen = titulares.where((t) {
+      final cat = t['category']?.toString().trim().toLowerCase();
+      return cat == 'men';
+    }).length;
+
+    final int countMed = titulares.where((t) {
+      final cat = t['category']?.toString().trim().toLowerCase();
+      return cat == 'med';
+    }).length;
+
+    debugPrint("Validación titulares => men=$countMen, med=$countMed");
+
+    // Regla 1: al menos 1 men
+    if (countMen < 1) {
+      _showValidationError(
+          "Debe haber al menos un jugador Menor (men) en los titulares.");
+      return false;
+    }
+
+    // Regla 2: men + med >= 3
+    final int totalMenYMed = countMen + countMed;
+    if (totalMenYMed < 3) {
+      _showValidationError(
+          "Actualmente tienes men=$countMen, med=$countMed (suma=$totalMenYMed).");
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Muestra el diálogo de confirmación usando BasicConfirmationDialog.
   Future<bool?> _showConfirmDialog({
     required BuildContext context,
     required double dialogFontSize,
@@ -113,7 +225,6 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     final String titleText = showSubstitutions
         ? (substitutionChanges.isNotEmpty ? substitutionChanges.join("\n") : "")
         : title;
-
     return showDialog<bool>(
       context: context,
       builder: (context) {
@@ -150,7 +261,6 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     );
   }
 
-  /// Al tocar un jugador titular se abre el diálogo de sustitución.
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -208,6 +318,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     final double horizontalPadding = cardHeight * 0.2;
     final double topPadding = cardHeight * 0.05;
     final double bottomPadding = cardHeight * 0.1;
+
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -243,7 +354,6 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Jugador ${jugador['number']}',
@@ -276,6 +386,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final double dialogFontSize = size.shortestSide * 0.040;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
@@ -287,15 +398,13 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Botón de atrás: si no hubo sustituciones, vuelve directamente;
-                  // si hubo, muestra el diálogo con el mensaje "Se descartarán los cambios realizados."
+                  // Botón de atrás
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () async {
                       if (substitutionChanges.isEmpty) {
-                        // No hubo sustituciones, se retorna la información original.
                         final updatedNumbers = [
                           for (var t in _originalTitulares)
                             t['number'] as String,
@@ -355,6 +464,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                     },
                   ),
                   const SizedBox(width: 4),
+                  // Aquí mostramos el nombre del equipo (leftTeamName)
                   Text(
                     teamName,
                     style: TextStyle(
@@ -364,7 +474,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // Botón de confirmar: muestra cambios y guarda las modificaciones.
+                  // Botón de confirmar
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -377,6 +487,10 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                         showSubstitutions: true,
                       );
                       if (confirm == true) {
+                        // Validamos las reglas
+                        if (!_validarTitulares()) {
+                          return;
+                        }
                         final updatedNumbers = [
                           for (var t in titulares) t['number'] as String,
                           for (var s in suplentes) s['number'] as String,

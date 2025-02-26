@@ -79,6 +79,7 @@ class _InitialScreenState extends State<InitialScreen> {
     showDialog(
       context: context,
       builder: (context) => NumberInputDialog(
+        defaultNumber: currentNumber, // Se pasa el número de la bolita
         onAccept: (result) {
           setState(() {
             if (isLeft) {
@@ -89,7 +90,6 @@ class _InitialScreenState extends State<InitialScreen> {
               rightCategories[index] = result.category;
             }
           });
-          // Cierra el diálogo
           Navigator.of(context).pop();
         },
         onCancel: () {
@@ -212,10 +212,12 @@ class _InitialScreenState extends State<InitialScreen> {
                               return Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: IconButton(
-                                  icon: const Icon(Icons.add, color: Colors.blue),
+                                  icon:
+                                      const Icon(Icons.add, color: Colors.blue),
                                   onPressed: () {
                                     setState(() {
-                                      leftNumbers.add('${leftNumbers.length + 1}');
+                                      leftNumbers
+                                          .add('${leftNumbers.length + 1}');
                                       leftCategories.add(null);
                                       // Los jugadores agregados más allá del once inicial son suplentes
                                       leftIsTitular.add(false);
@@ -237,11 +239,14 @@ class _InitialScreenState extends State<InitialScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: const [
-                      Text("May", style: TextStyle(color: Colors.red, fontSize: 9)),
+                      Text("May",
+                          style: TextStyle(color: Colors.red, fontSize: 9)),
                       SizedBox(height: 4),
-                      Text("Med", style: TextStyle(color: Colors.blue, fontSize: 9)),
+                      Text("Med",
+                          style: TextStyle(color: Colors.blue, fontSize: 9)),
                       SizedBox(height: 4),
-                      Text("men", style: TextStyle(color: Colors.yellow, fontSize: 9)),
+                      Text("men",
+                          style: TextStyle(color: Colors.yellow, fontSize: 9)),
                     ],
                   ),
                 ),
@@ -346,10 +351,12 @@ class _InitialScreenState extends State<InitialScreen> {
                               return Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: IconButton(
-                                  icon: const Icon(Icons.add, color: Colors.red),
+                                  icon:
+                                      const Icon(Icons.add, color: Colors.red),
                                   onPressed: () {
                                     setState(() {
-                                      rightNumbers.add('${rightNumbers.length + 1}');
+                                      rightNumbers
+                                          .add('${rightNumbers.length + 1}');
                                       rightCategories.add(null);
                                       // Los jugadores agregados más allá del once inicial son suplentes
                                       rightIsTitular.add(false);
@@ -399,13 +406,15 @@ class _InitialScreenState extends State<InitialScreen> {
                     // Validación para el equipo izquierdo
                     List<String> leftErrors = [];
                     if (leftNumbers.toSet().length != leftNumbers.length) {
-                      leftErrors.add("No se pueden repetir números en el equipo $leftTeamName.");
+                      leftErrors.add(
+                          "No se pueden repetir números en el equipo $leftTeamName.");
                     }
                     int leftMedCount = 0;
                     int leftMenCount = 0;
                     for (int i = 0; i < leftNumbers.length; i++) {
                       if (leftIsTitular[i]) {
-                        if (leftCategories[i] == "Med" || leftCategories[i] == "men") {
+                        if (leftCategories[i] == "Med" ||
+                            leftCategories[i] == "men") {
                           leftMedCount++;
                         }
                         if (leftCategories[i] == "men") {
@@ -413,21 +422,25 @@ class _InitialScreenState extends State<InitialScreen> {
                         }
                       }
                     }
-                    bool leftValid = (leftMedCount >= 2 && leftMenCount >= 1) || (leftMenCount >= 3);
+                    bool leftValid = (leftMedCount >= 2 && leftMenCount >= 1) ||
+                        (leftMenCount >= 3);
                     if (!leftValid) {
-                      leftErrors.add("El equipo $leftTeamName debe tener al menos 2 medianos (o 3 menores) y 1 menor entre los titulares.");
+                      leftErrors.add(
+                          "El equipo $leftTeamName debe tener al menos 2 medianos (o 3 menores) y 1 menor entre los titulares.");
                     }
 
                     // Validación para el equipo derecho
                     List<String> rightErrors = [];
                     if (rightNumbers.toSet().length != rightNumbers.length) {
-                      rightErrors.add("No se pueden repetir números en el equipo $rightTeamName.");
+                      rightErrors.add(
+                          "No se pueden repetir números en el equipo $rightTeamName.");
                     }
                     int rightMedCount = 0;
                     int rightMenCount = 0;
                     for (int i = 0; i < rightNumbers.length; i++) {
                       if (rightIsTitular[i]) {
-                        if (rightCategories[i] == "Med" || rightCategories[i] == "men") {
+                        if (rightCategories[i] == "Med" ||
+                            rightCategories[i] == "men") {
                           rightMedCount++;
                         }
                         if (rightCategories[i] == "men") {
@@ -435,9 +448,12 @@ class _InitialScreenState extends State<InitialScreen> {
                         }
                       }
                     }
-                    bool rightValid = (rightMedCount >= 2 && rightMenCount >= 1) || (rightMenCount >= 3);
+                    bool rightValid =
+                        (rightMedCount >= 2 && rightMenCount >= 1) ||
+                            (rightMenCount >= 3);
                     if (!rightValid) {
-                      rightErrors.add("El equipo $rightTeamName debe tener al menos 2 medianos (o 3 menores) y 1 menor entre los titulares.");
+                      rightErrors.add(
+                          "El equipo $rightTeamName debe tener al menos 2 medianos (o 3 menores) y 1 menor entre los titulares.");
                     }
 
                     // Si hay errores, se muestran en un AlertDialog.
@@ -462,12 +478,12 @@ class _InitialScreenState extends State<InitialScreen> {
                             ),
                             title: const Center(
                               child: Text(
-                              "Error de validación",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                                "Error de validación",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                             content: SingleChildScrollView(
@@ -499,16 +515,16 @@ class _InitialScreenState extends State<InitialScreen> {
                             ),
                             actions: [
                               Center(
-                              child: TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text(
-                                "Aceptar",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.blue,
+                                child: TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text(
+                                    "Aceptar",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
                                 ),
-                                ),
-                              ),
                               ),
                             ],
                           );

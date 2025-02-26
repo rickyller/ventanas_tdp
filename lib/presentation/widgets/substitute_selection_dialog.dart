@@ -144,7 +144,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
             ),
             // Botón de confirmar con altura fija ~10% de la pantalla
             SizedBox(
-              height: screenSize.height * 0.1,
+              height: screenSize.height * 0.15,
               child: ElevatedButton(
                 onPressed: hasSelection
                     ? () {
@@ -168,7 +168,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   textStyle: TextStyle(
-                    fontSize: screenSize.width * 0.03,
+                    fontSize: screenSize.width * 0.06,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

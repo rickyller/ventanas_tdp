@@ -20,7 +20,8 @@ class VisitorTeamChangesScreen extends StatefulWidget {
   const VisitorTeamChangesScreen({Key? key}) : super(key: key);
 
   @override
-  _VisitorTeamChangesScreenState createState() => _VisitorTeamChangesScreenState();
+  _VisitorTeamChangesScreenState createState() =>
+      _VisitorTeamChangesScreenState();
 }
 
 class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
@@ -32,12 +33,12 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
   final List<SubstitutionAction> _substitutionStack = [];
 
   bool _isInitialized = false;
-  // Para guardar los datos originales y poder descartar cambios.
   late List<Map<String, dynamic>> _originalTitulares;
   late List<Map<String, dynamic>> _originalSuplentes;
 
-  // Se espera que este valor provenga del argumento 'teamName', por defecto "Visita".
-  String teamName = 'Visita';
+  // Antes estaba "String teamName = 'Visita';"
+  // Ahora usamos la variable rightTeamName en su lugar.
+  late String rightTeamName;
 
   @override
   void didChangeDependencies() {
@@ -46,9 +47,17 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
       final args = ModalRoute.of(context)?.settings.arguments as Map?;
       if (args != null) {
         debugPrint('Argumentos recibidos (Visita): $args');
+        // Ajusta esta línea si en tu TeamSelectorScreen pasas la key con otro nombre
+        // Por ejemplo: {'teamName': widget.rightTeamName} o {'rightTeamName': widget.rightTeamName}
         if (args.containsKey('teamName')) {
-          teamName = args['teamName'] as String;
+          rightTeamName = args['teamName'] as String;
+        } else {
+          // Si no trae el argumento, un valor por defecto
+          rightTeamName = 'Sin nombre';
         }
+      } else {
+        // Si no llegan argumentos
+        rightTeamName = 'Sin nombre';
       }
 
       final numbers = List<String>.from(args?['numbers'] ?? []);
@@ -71,7 +80,6 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
           suplentes.add(jugador);
         }
       }
-      // Guardamos una copia de los datos originales para poder descartar cambios.
       _originalTitulares = List<Map<String, dynamic>>.from(titulares);
       _originalSuplentes = List<Map<String, dynamic>>.from(suplentes);
 
@@ -101,9 +109,117 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     }
   }
 
+  /// Diálogo de error responsivo
+  void _showValidationError(String message) {
+    final Size screenSize = MediaQuery.of(context).size;
+    final double dialogWidth = screenSize.width * 0.8;
+    final double dialogHeight = screenSize.height * 0.5;
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: AlertDialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            backgroundColor: Colors.grey[850],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(screenSize.width * 0.08),
+            ),
+            content: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: dialogWidth,
+                  maxHeight: dialogHeight,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Regla incumplida",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenSize.width * 0.045,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: screenSize.height * 0.02),
+                    Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: screenSize.width * 0.04,
+                      ),
+                    ),
+                    SizedBox(height: screenSize.height * 0.05),
+                    Align(
+                      alignment: Alignment.center,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: dialogWidth * 0.4,
+                        ),
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.blueAccent,
+                            textStyle: TextStyle(
+                              fontSize: screenSize.width * 0.055,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: const Text("Aceptar"),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Valida la regla: al menos 1 men y sum(men, Med) >= 3
+  bool _validarTitulares() {
+    final int countMen = titulares.where((t) {
+      final cat = t['category']?.toString().trim().toLowerCase();
+      return cat == 'men';
+    }).length;
+
+    final int countMed = titulares.where((t) {
+      final cat = t['category']?.toString().trim().toLowerCase();
+      return cat == 'med';
+    }).length;
+
+    debugPrint(
+        "Validación titulares VISITA => men=$countMen, med=$countMed");
+
+    // 1) al menos 1 men
+    if (countMen < 1) {
+      _showValidationError(
+        "Debe haber al menos un jugador Menor (men) en los titulares.",
+      );
+      return false;
+    }
+    // 2) men + med >= 3
+    final int totalMenYMed = countMen + countMed;
+    if (totalMenYMed < 3) {
+      _showValidationError(
+        "Actualmente tienes men=$countMen, med=$countMed (suma=$totalMenYMed).",
+      );
+      return false;
+    }
+    return true;
+  }
+
   /// Muestra el diálogo de confirmación usando BasicConfirmationDialog.
-  /// Si showSubstitutions es true, se mostrarán los cambios; 
-  /// de lo contrario, se usará el mensaje que se pase en title.
   Future<bool?> _showConfirmDialog({
     required BuildContext context,
     required double dialogFontSize,
@@ -112,9 +228,11 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
   }) {
     final watchSize = MediaQuery.of(context).size;
     final double iconSize = watchSize.width * 0.07;
-    final String titleText = showSubstitutions
-        ? (substitutionChanges.isNotEmpty ? substitutionChanges.join("\n") : "")
-        : title;
+    final String titleText =
+        (showSubstitutions && substitutionChanges.isNotEmpty)
+            ? substitutionChanges.join("\n")
+            : title;
+
     return showDialog<bool>(
       context: context,
       builder: (context) {
@@ -133,7 +251,8 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                   Icon(Icons.check, color: Colors.white, size: iconSize),
               cancelIcon:
                   Icon(Icons.close, color: Colors.white, size: iconSize),
-              middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
+              middleIcon:
+                  Icon(Icons.undo, color: Colors.white, size: iconSize),
               onMiddlePressed: () {
                 _undoLastSubstitution();
                 setDialogState(() {});
@@ -151,7 +270,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     );
   }
 
-  /// Manejo del tap en un jugador titular para hacer el cambio.
+  /// Tap en un jugador titular para hacer el cambio, usando SubstituteSelectionDialog.
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -196,6 +315,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     );
   }
 
+  /// Construye la “tarjeta” del jugador (similar a LocalTeamChangesScreen).
   Widget buildPlayerTile(
     Map<String, dynamic> jugador, {
     required bool esTitular,
@@ -209,6 +329,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     final double horizontalPadding = cardHeight * 0.2;
     final double topPadding = cardHeight * 0.05;
     final double bottomPadding = cardHeight * 0.1;
+
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -244,7 +365,6 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
                         'Jugador ${jugador['number']}',
@@ -273,10 +393,12 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     );
   }
 
+  /// Construye la pantalla con la misma estructura que el LocalTeamChangesScreen.
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final double dialogFontSize = size.shortestSide * 0.040;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
@@ -288,14 +410,12 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Botón de atrás:
-                  // Si no hubo sustituciones se retorna directamente la información original;
-                  // si hubo, se muestra el diálogo con el mensaje "Se descartarán los cambios realizados."
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () async {
+                      // Igual que en Local: si no hubo cambios, sale; si hubo, confirma.
                       if (substitutionChanges.isEmpty) {
                         final updatedNumbers = [
                           for (var t in _originalTitulares) t['number'] as String,
@@ -325,12 +445,16 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                         );
                         if (confirm == true) {
                           final updatedNumbers = [
-                            for (var t in _originalTitulares) t['number'] as String,
-                            for (var s in _originalSuplentes) s['number'] as String,
+                            for (var t in _originalTitulares)
+                              t['number'] as String,
+                            for (var s in _originalSuplentes)
+                              s['number'] as String,
                           ];
                           final updatedCategories = [
-                            for (var t in _originalTitulares) t['category'] as String?,
-                            for (var s in _originalSuplentes) s['category'] as String?,
+                            for (var t in _originalTitulares)
+                              t['category'] as String?,
+                            for (var s in _originalSuplentes)
+                              s['category'] as String?,
                           ];
                           final updatedIsTitular = [
                             for (var _ in _originalTitulares) true,
@@ -348,8 +472,9 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                     },
                   ),
                   const SizedBox(width: 4),
+                  // Aquí mostramos el nombre del equipo visitante (rightTeamName).
                   Text(
-                    teamName,
+                    rightTeamName,
                     style: TextStyle(
                       fontSize: size.shortestSide * 0.07,
                       fontWeight: FontWeight.bold,
@@ -357,7 +482,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  // Botón de confirmar: muestra los cambios y guarda las modificaciones.
+                  // Botón de confirmar.
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -370,6 +495,11 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                         showSubstitutions: true,
                       );
                       if (confirm == true) {
+                        // Validación de titulares
+                        if (!_validarTitulares()) {
+                          // Si falla la validación, no cierra la pantalla
+                          return;
+                        }
                         final updatedNumbers = [
                           for (var t in titulares) t['number'] as String,
                           for (var s in suplentes) s['number'] as String,
@@ -430,13 +560,13 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ...suplentes.map((jugador) {
-              return buildPlayerTile(
+            ...suplentes.map(
+              (jugador) => buildPlayerTile(
                 jugador,
                 esTitular: false,
                 onTap: null,
-              );
-            }),
+              ),
+            ),
           ],
         ],
       ),

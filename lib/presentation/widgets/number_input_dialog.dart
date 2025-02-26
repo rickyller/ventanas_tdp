@@ -8,7 +8,6 @@ class NumberInputResult {
   NumberInputResult({required this.number, required this.category});
 }
 
-/// Widget para ingresar un número y asignar una categoría (May, Med o Men).
 class NumberInputDialog extends StatefulWidget {
   final String buttonText;
   final Color backgroundColor;
@@ -17,6 +16,8 @@ class NumberInputDialog extends StatefulWidget {
   final Color textColor;
   final VoidCallback? onCancel;
   final ValueChanged<NumberInputResult> onAccept;
+  // Se añade la propiedad defaultNumber para recibir el número por defecto.
+  final String defaultNumber;
 
   const NumberInputDialog({
     Key? key,
@@ -27,6 +28,7 @@ class NumberInputDialog extends StatefulWidget {
     this.textColor = Colors.black,
     this.onCancel,
     required this.onAccept,
+    this.defaultNumber = '1',
   }) : super(key: key);
 
   @override
@@ -38,7 +40,6 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
   String? errorText;
   String? selectedCategory; // "May", "Med" o "men"
 
-  // Función para mapear la categoría a un color específico.
   Color _mapCategoryToColor(String category) {
     switch (category) {
       case "May":
@@ -46,18 +47,23 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
       case "Med":
         return Colors.blue;
       case "men":
-        return Color.fromARGB(255, 180, 163, 7);
-
+        return const Color.fromARGB(255, 180, 163, 7);
       default:
         return Colors.grey;
     }
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Se asigna el valor por defecto recibido.
+    _controller.text = widget.defaultNumber;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
     final double dialogWidth = screenSize.width * 0.8;
-    // Ajustamos el tamaño del botón para evitar overflow (por ejemplo, 13% del ancho de la pantalla)
     final double buttonSize = screenSize.width * 0.131;
 
     return AlertDialog(
@@ -71,7 +77,6 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Fila para seleccionar la categoría: May, Med, men
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -81,7 +86,6 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
                 ],
               ),
               const SizedBox(height: 10),
-              // TextField reducido en altura
               SizedBox(
                 height: 30,
                 child: TextField(
@@ -91,7 +95,7 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
                   style: TextStyle(color: widget.textColor, fontSize: 14),
                   decoration: InputDecoration(
                     counterText: '',
-                    hintText: '0',
+                    hintText: widget.defaultNumber,
                     hintStyle: TextStyle(color: Colors.black, fontSize: 14),
                     errorText: errorText,
                     filled: true,
@@ -116,7 +120,6 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Fila de botones para aceptar o cancelar
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -146,7 +149,6 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
 
   Widget _buildCategoryButton(String category, double size) {
     bool isSelected = (selectedCategory == category);
-    // Mapear la categoría a su color principal
     final Color catColor = _mapCategoryToColor(category);
 
     return SizedBox(
@@ -159,7 +161,6 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
           });
         },
         style: ElevatedButton.styleFrom(
-          // Si está seleccionada, usar el color completo, si no, un tono gris o con opacidad
           backgroundColor: isSelected ? catColor : catColor.withOpacity(0.1),
           shape: const CircleBorder(),
           padding: EdgeInsets.all(size * 0.25),
@@ -174,14 +175,12 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
 
   void _handleAccept() {
     final input = _controller.text;
-    // Validar que se haya seleccionado categoría
     if (selectedCategory == null) {
       setState(() {
         errorText = 'Seleccione una categoría';
       });
       return;
     }
-    // Validar que el número sea máximo 3 dígitos
     if (input.isNotEmpty && input.length <= 3 && int.tryParse(input) != null) {
       widget.onAccept(
         NumberInputResult(
