@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ventanas_tdp/presentation/widgets/basic_confirmation_dialog.dart';
 
-class TeamSelectorScreen extends StatelessWidget {
+class TeamSelectorScreen extends StatefulWidget {
   final String leftTeamName;
   final String rightTeamName;
   final List<String> leftNumbers;
@@ -24,11 +24,113 @@ class TeamSelectorScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Tamaño de la pantalla para cálculos responsivos.
-    final size = MediaQuery.of(context).size;
-    // Tamaño de fuente para el diálogo.
+  State<TeamSelectorScreen> createState() => _TeamSelectorScreenState();
+}
 
+class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
+  late List<String> _leftNumbers;
+  late List<String?> _leftCategories;
+  late List<bool> _leftIsTitular;
+
+  late List<String> _rightNumbers;
+  late List<String?> _rightCategories;
+  late List<bool> _rightIsTitular;
+
+  // Contadores para cambios y ventanas de cada equipo.
+  int leftChangeCount = 0;
+  int leftWindowCount = 0;
+  int rightChangeCount = 0;
+  int rightWindowCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Copiamos los valores iniciales a variables internas del estado.
+    _leftNumbers = List.from(widget.leftNumbers);
+    _leftCategories = List.from(widget.leftCategories);
+    _leftIsTitular = List.from(widget.leftIsTitular);
+
+    _rightNumbers = List.from(widget.rightNumbers);
+    _rightCategories = List.from(widget.rightCategories);
+    _rightIsTitular = List.from(widget.rightIsTitular);
+  }
+
+  /// Abre la pantalla de cambios para el equipo local.
+  Future<void> _openLocalTeamChanges() async {
+    // Si ya se usaron 3 ventanas para el equipo local, no se permite entrar.
+    if (leftWindowCount >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("No quedan ventanas para ${widget.leftTeamName}."),
+        ),
+      );
+      return;
+    }
+    final result = await Navigator.pushNamed(
+      context,
+      '/localTeamChanges',
+      arguments: {
+        'teamName': widget.leftTeamName,
+        'numbers': _leftNumbers,
+        'categories': _leftCategories,
+        'isTitular': _leftIsTitular,
+      },
+    );
+    if (result is Map) {
+      // Se espera que la pantalla de cambios retorne un Map con la llave 'substitutionChanges',
+      // que es una lista de cadenas con los cambios realizados en esa ventana.
+      final List<String>? windowChanges = result['substitutionChanges'] as List<String>?;
+      // Si se hicieron cambios (la lista no está vacía), se suma una ventana y se acumulan los cambios.
+      if (windowChanges != null && windowChanges.isNotEmpty) {
+        setState(() {
+          leftWindowCount++;
+          leftChangeCount += windowChanges.length;
+          // Además, actualizamos las listas del equipo (en caso de que se hayan modificado).
+          _leftNumbers = result['numbers'] as List<String>;
+          _leftCategories = result['categories'] as List<String?>;
+          _leftIsTitular = result['isTitular'] as List<bool>;
+        });
+      }
+    }
+  }
+
+  /// Abre la pantalla de cambios para el equipo visitante.
+  Future<void> _openVisitorTeamChanges() async {
+    if (rightWindowCount >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("No quedan oportunidades (ventanas) para ${widget.rightTeamName}."),
+        ),
+      );
+      return;
+    }
+    final result = await Navigator.pushNamed(
+      context,
+      '/visitorTeamChanges',
+      arguments: {
+        'teamName': widget.rightTeamName,
+        'numbers': _rightNumbers,
+        'categories': _rightCategories,
+        'isTitular': _rightIsTitular,
+      },
+    );
+    if (result is Map) {
+      final List<String>? windowChanges = result['substitutionChanges'] as List<String>?;
+      if (windowChanges != null && windowChanges.isNotEmpty) {
+        setState(() {
+          rightWindowCount++;
+          rightChangeCount += windowChanges.length;
+          _rightNumbers = result['numbers'] as List<String>;
+          _rightCategories = result['categories'] as List<String?>;
+          _rightIsTitular = result['isTitular'] as List<bool>;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
@@ -55,14 +157,10 @@ class TeamSelectorScreen extends StatelessWidget {
                             onConfirm: () => Navigator.pop(context, true),
                             onCancel: () => Navigator.pop(context, false),
                             backgroundColor: Colors.grey[850]!,
-                            confirmButtonColor:
-                                const Color.fromARGB(255, 18, 108, 210),
-                            cancelButtonColor:
-                                const Color.fromARGB(255, 242, 20, 20),
-                            confirmIcon:
-                                const Icon(Icons.check, color: Colors.white),
-                            cancelIcon:
-                                const Icon(Icons.close, color: Colors.white),
+                            confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
+                            cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
+                            confirmIcon: const Icon(Icons.check, color: Colors.white),
+                            cancelIcon: const Icon(Icons.close, color: Colors.white),
                             buttonSpacing: 4.0,
                           );
                         },
@@ -73,7 +171,6 @@ class TeamSelectorScreen extends StatelessWidget {
                     },
                   ),
                   const SizedBox(width: 4),
-
                 ],
               ),
             ),
@@ -85,17 +182,17 @@ class TeamSelectorScreen extends StatelessWidget {
           return Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              // Row para alinear los botones horizontalmente.
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  // Columna para el equipo izquierdo (local).
+                  // Columna para el equipo izquierdo (local)
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // Se muestra dinámicamente el estado de cambios y ventanas
                         Text(
-                          "0 cambios en 0 ventanas",
+                          "$leftChangeCount cambios en $leftWindowCount ventanas",
                           style: TextStyle(
                             fontSize: size.width * 0.055,
                             color: Colors.white,
@@ -104,7 +201,6 @@ class TeamSelectorScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 8),
-                        // Botón para el equipo izquierdo (local)
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
@@ -119,20 +215,9 @@ class TeamSelectorScreen extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/localTeamChanges',
-                              arguments: {
-                                'teamName': leftTeamName,
-                                'numbers': leftNumbers,
-                                'categories': leftCategories,
-                                'isTitular': leftIsTitular,
-                              },
-                            );
-                          },
+                          onPressed: _openLocalTeamChanges,
                           child: Text(
-                            leftTeamName,
+                            widget.leftTeamName,
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -140,13 +225,13 @@ class TeamSelectorScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 24),
-                  // Columna para el equipo derecho (visita).
+                  // Columna para el equipo derecho (visita)
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          "0 cambios en 0 ventanas",
+                          "$rightChangeCount cambios en $rightWindowCount ventanas",
                           style: TextStyle(
                             fontSize: size.width * 0.055,
                             color: Colors.white,
@@ -169,20 +254,9 @@ class TeamSelectorScreen extends StatelessWidget {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              '/visitorTeamChanges',
-                              arguments: {
-                                'team': 'right',
-                                'numbers': rightNumbers,
-                                'categories': rightCategories,
-                                'isTitular': rightIsTitular,
-                              },
-                            );
-                          },
+                          onPressed: _openVisitorTeamChanges,
                           child: Text(
-                            rightTeamName,
+                            widget.rightTeamName,
                             textAlign: TextAlign.center,
                           ),
                         ),

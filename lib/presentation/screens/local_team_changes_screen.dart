@@ -32,7 +32,11 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
   final List<SubstitutionAction> _substitutionStack = [];
 
   bool _isInitialized = false;
-  // Se espera que este valor provenga del argumento 'teamName'
+  // Para guardar la información original y poder descartar los cambios.
+  late List<Map<String, dynamic>> _originalTitulares;
+  late List<Map<String, dynamic>> _originalSuplentes;
+
+  // Se espera que este valor provenga del argumento 'teamName', por defecto "Local".
   String teamName = 'Local';
 
   @override
@@ -66,6 +70,10 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
           suplentes.add(jugador);
         }
       }
+      // Guardamos una copia de los datos originales para poder descartar cambios.
+      _originalTitulares = List<Map<String, dynamic>>.from(titulares);
+      _originalSuplentes = List<Map<String, dynamic>>.from(suplentes);
+
       _isInitialized = true;
     }
   }
@@ -92,22 +100,19 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     }
   }
 
-  /// Diálogo de confirmación usando BasicConfirmationDialog, sin título,
-  /// con íconos pequeños para cancelar, deshacer y confirmar.
-  /// Además, si existen sustituciones se muestran en el área del título.
+  /// Muestra el diálogo de confirmación. El parámetro showSubstitutions indica
+  /// si se deben mostrar los cambios realizados.
   Future<bool?> _showConfirmDialog({
     required BuildContext context,
     required double dialogFontSize,
     required String title,
-    bool showSubstitutions = false,
+    required bool showSubstitutions,
   }) {
     final watchSize = MediaQuery.of(context).size;
     final double iconSize = watchSize.width * 0.07;
-    // Une las sustituciones en una sola línea con " | " como separador
-    final String titleText =
-        (showSubstitutions && substitutionChanges.isNotEmpty)
-            ? substitutionChanges.join("\n")
-            : "";
+    final String titleText = showSubstitutions
+        ? (substitutionChanges.isNotEmpty ? substitutionChanges.join("\n") : "")
+        : title;
 
     return showDialog<bool>(
       context: context,
@@ -137,8 +142,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
               buttonSpacing: watchSize.width * 0.01,
               titleFontSize: watchSize.width * 0.045,
               dialogWidthFactor: 1,
-              dialogMinHeight:
-                  watchSize.height * 0.45, // Ejemplo de altura personalizada
+              dialogMinHeight: watchSize.height * 0.45,
             );
           },
         );
@@ -146,7 +150,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     );
   }
 
-  /// Manejo del tap en un jugador titular para hacer el cambio.
+  /// Al tocar un jugador titular se abre el diálogo de sustitución.
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -169,6 +173,7 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
             setState(() {
               final substitute = suplentes[selectedIndex];
               final leaving = titulares[titularIndex];
+
               _substitutionStack.add(
                 SubstitutionAction(
                   titularIndex: titularIndex,
@@ -176,8 +181,10 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                   newTitular: substitute,
                 ),
               );
+
               titulares[titularIndex] = substitute;
               suplentes.removeAt(selectedIndex);
+
               substitutionChanges.add(
                 "Entra ${substitute['number']}, Sale ${leaving['number']}",
               );
@@ -187,94 +194,88 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
       ),
     );
   }
-Widget buildPlayerTile(
-  Map<String, dynamic> jugador, {
-  required bool esTitular,
-  required VoidCallback? onTap,
-}) {
-  final size = MediaQuery.of(context).size;
-  // La tarjeta ocupará el 25% de la altura de la pantalla
-  final double cardHeight = size.height * 0.25;
-  // Ajusta el radio del avatar en función de la altura de la tarjeta
-  final double avatarRadius = cardHeight * 0.3;
-  // Tamaños de fuente relativos a la altura de la tarjeta
-  final double titleFontSize = cardHeight * 0.25;
-  final double subtitleFontSize = cardHeight * 0.20;
-  // Padding horizontal (fijo) y vertical ajustado para que queden más arriba
-  final double horizontalPadding = cardHeight * 0.2;
-  final double topPadding = cardHeight * 0.05; // menos padding arriba
-  final double bottomPadding = cardHeight * 0.1;
 
-  return GestureDetector(
-    onTap: onTap,
-    child: SizedBox(
-      height: cardHeight,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey[850],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: horizontalPadding,
-            right: horizontalPadding,
-            top: topPadding,
-            bottom: bottomPadding,
+  Widget buildPlayerTile(
+    Map<String, dynamic> jugador, {
+    required bool esTitular,
+    required VoidCallback? onTap,
+  }) {
+    final size = MediaQuery.of(context).size;
+    final double cardHeight = size.height * 0.25;
+    final double avatarRadius = cardHeight * 0.3;
+    final double titleFontSize = cardHeight * 0.25;
+    final double subtitleFontSize = cardHeight * 0.20;
+    final double horizontalPadding = cardHeight * 0.2;
+    final double topPadding = cardHeight * 0.05;
+    final double bottomPadding = cardHeight * 0.1;
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        height: cardHeight,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: Colors.grey[850],
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start, // Alinea al tope
-            children: [
-              CircleAvatar(
-                radius: avatarRadius,
-                backgroundColor: getCircleColor(jugador['category']),
-                child: Text(
-                  jugador['number'],
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: cardHeight * 0.2,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: horizontalPadding,
+              right: horizontalPadding,
+              top: topPadding,
+              bottom: bottomPadding,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: avatarRadius,
+                  backgroundColor: getCircleColor(jugador['category']),
+                  child: Text(
+                    jugador['number'],
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: cardHeight * 0.2,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: horizontalPadding * 0.5),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start, // Empieza arriba
-                  children: [
-                    Text(
-                      'Jugador ${jugador['number']}',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: titleFontSize,
+                SizedBox(width: horizontalPadding * 0.5),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Jugador ${jugador['number']}',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: titleFontSize,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: cardHeight * 0.02),
-                    Text(
-                      jugador['category'] ?? 'S/C',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: subtitleFontSize,
+                      SizedBox(height: cardHeight * 0.02),
+                      Text(
+                        jugador['category'] ?? 'S/C',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: subtitleFontSize,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    // dialogFontSize se define en función de la dimensión más corta
     final double dialogFontSize = size.shortestSide * 0.040;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
@@ -286,21 +287,74 @@ Widget buildPlayerTile(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Botón de atrás: si no hubo sustituciones, vuelve directamente;
+                  // si hubo, muestra el diálogo con el mensaje "Se descartarán los cambios realizados."
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () async {
-                      final bool? confirm = await _showConfirmDialog(
-                        context: context,
-                        dialogFontSize: dialogFontSize,
-                        title: "",
-                        showSubstitutions: false,
-                      );
-                      if (confirm == true) Navigator.pop(context);
+                      if (substitutionChanges.isEmpty) {
+                        // No hubo sustituciones, se retorna la información original.
+                        final updatedNumbers = [
+                          for (var t in _originalTitulares)
+                            t['number'] as String,
+                          for (var s in _originalSuplentes)
+                            s['number'] as String,
+                        ];
+                        final updatedCategories = [
+                          for (var t in _originalTitulares)
+                            t['category'] as String?,
+                          for (var s in _originalSuplentes)
+                            s['category'] as String?,
+                        ];
+                        final updatedIsTitular = [
+                          for (var _ in _originalTitulares) true,
+                          for (var _ in _originalSuplentes) false,
+                        ];
+                        final returnData = {
+                          'numbers': updatedNumbers,
+                          'categories': updatedCategories,
+                          'isTitular': updatedIsTitular,
+                          'substitutionChanges': <String>[],
+                        };
+                        Navigator.pop(context, returnData);
+                      } else {
+                        final bool? confirm = await _showConfirmDialog(
+                          context: context,
+                          dialogFontSize: dialogFontSize,
+                          title: "Se descartarán los cambios realizados.",
+                          showSubstitutions: false,
+                        );
+                        if (confirm == true) {
+                          final updatedNumbers = [
+                            for (var t in _originalTitulares)
+                              t['number'] as String,
+                            for (var s in _originalSuplentes)
+                              s['number'] as String,
+                          ];
+                          final updatedCategories = [
+                            for (var t in _originalTitulares)
+                              t['category'] as String?,
+                            for (var s in _originalSuplentes)
+                              s['category'] as String?,
+                          ];
+                          final updatedIsTitular = [
+                            for (var _ in _originalTitulares) true,
+                            for (var _ in _originalSuplentes) false,
+                          ];
+                          final returnData = {
+                            'numbers': updatedNumbers,
+                            'categories': updatedCategories,
+                            'isTitular': updatedIsTitular,
+                            'substitutionChanges': <String>[],
+                          };
+                          Navigator.pop(context, returnData);
+                        }
+                      }
                     },
                   ),
-                  const SizedBox(width: 4), // Espaciado reducido
+                  const SizedBox(width: 4),
                   Text(
                     teamName,
                     style: TextStyle(
@@ -310,6 +364,7 @@ Widget buildPlayerTile(
                     ),
                   ),
                   const SizedBox(width: 4),
+                  // Botón de confirmar: muestra cambios y guarda las modificaciones.
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -322,7 +377,25 @@ Widget buildPlayerTile(
                         showSubstitutions: true,
                       );
                       if (confirm == true) {
-                        Navigator.pop(context, substitutionChanges);
+                        final updatedNumbers = [
+                          for (var t in titulares) t['number'] as String,
+                          for (var s in suplentes) s['number'] as String,
+                        ];
+                        final updatedCategories = [
+                          for (var t in titulares) t['category'] as String?,
+                          for (var s in suplentes) s['category'] as String?,
+                        ];
+                        final updatedIsTitular = [
+                          for (var _ in titulares) true,
+                          for (var _ in suplentes) false,
+                        ];
+                        final returnData = {
+                          'numbers': updatedNumbers,
+                          'categories': updatedCategories,
+                          'isTitular': updatedIsTitular,
+                          'substitutionChanges': substitutionChanges,
+                        };
+                        Navigator.pop(context, returnData);
                       }
                     },
                   ),

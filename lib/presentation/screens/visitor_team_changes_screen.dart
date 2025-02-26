@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:ventanas_tdp/presentation/widgets/substitute_selection_dialog.dart';
 import 'package:ventanas_tdp/presentation/widgets/basic_confirmation_dialog.dart';
 
+/// Clase para almacenar la información de una sustitución,
+/// de modo que podamos revertirla.
 class SubstitutionAction {
   final int titularIndex;
   final Map<String, dynamic> oldTitular; // el que salió
@@ -18,50 +20,62 @@ class VisitorTeamChangesScreen extends StatefulWidget {
   const VisitorTeamChangesScreen({Key? key}) : super(key: key);
 
   @override
-  _VisitorTeamChangesScreenState createState() =>
-      _VisitorTeamChangesScreenState();
+  _VisitorTeamChangesScreenState createState() => _VisitorTeamChangesScreenState();
 }
 
 class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
-  late List<String> numbers;
-  late List<String?> categories;
-  late List<bool> isTitularList; // Para separar titulares y suplentes
   late List<Map<String, dynamic>> titulares;
   late List<Map<String, dynamic>> suplentes;
   List<String> substitutionChanges = [];
+
+  /// Pila de acciones para poder deshacer la última sustitución.
   final List<SubstitutionAction> _substitutionStack = [];
+
+  bool _isInitialized = false;
+  // Para guardar los datos originales y poder descartar cambios.
+  late List<Map<String, dynamic>> _originalTitulares;
+  late List<Map<String, dynamic>> _originalSuplentes;
+
+  // Se espera que este valor provenga del argumento 'teamName', por defecto "Visita".
+  String teamName = 'Visita';
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map?;
-    debugPrint("VisitorTeamChangesScreen args: $args");
-    if (args != null &&
-        args['numbers'] != null &&
-        args['categories'] != null) {
-      numbers = List<String>.from(args['numbers']);
-      categories = List<String?>.from(args['categories']);
-      isTitularList = (args['isTitular'] != null &&
-              (args['isTitular'] as List).isNotEmpty)
-          ? List<bool>.from(args['isTitular'])
-          : List<bool>.filled(numbers.length, true);
-    } else {
-      numbers = [];
-      categories = [];
-      isTitularList = [];
-    }
-    titulares = [];
-    suplentes = [];
-    for (int i = 0; i < numbers.length; i++) {
-      final jugador = {
-        'number': numbers[i],
-        'category': categories.length > i ? categories[i] : null,
-      };
-      if (i < isTitularList.length && isTitularList[i]) {
-        titulares.add(jugador);
-      } else {
-        suplentes.add(jugador);
+    if (!_isInitialized) {
+      final args = ModalRoute.of(context)?.settings.arguments as Map?;
+      if (args != null) {
+        debugPrint('Argumentos recibidos (Visita): $args');
+        if (args.containsKey('teamName')) {
+          teamName = args['teamName'] as String;
+        }
       }
+
+      final numbers = List<String>.from(args?['numbers'] ?? []);
+      final categories = List<String?>.from(args?['categories'] ?? []);
+      final isTitularList = (args?['isTitular'] != null &&
+              (args?['isTitular'] as List).isNotEmpty)
+          ? List<bool>.from(args?['isTitular'])
+          : List<bool>.filled(numbers.length, true);
+
+      titulares = [];
+      suplentes = [];
+      for (int i = 0; i < numbers.length; i++) {
+        final jugador = {
+          'number': numbers[i],
+          'category': categories.length > i ? categories[i] : null,
+        };
+        if (i < isTitularList.length && isTitularList[i]) {
+          titulares.add(jugador);
+        } else {
+          suplentes.add(jugador);
+        }
+      }
+      // Guardamos una copia de los datos originales para poder descartar cambios.
+      _originalTitulares = List<Map<String, dynamic>>.from(titulares);
+      _originalSuplentes = List<Map<String, dynamic>>.from(suplentes);
+
+      _isInitialized = true;
     }
   }
 
@@ -73,6 +87,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     return Colors.grey;
   }
 
+  /// Deshace la última sustitución (si existe).
   void _undoLastSubstitution() {
     if (_substitutionStack.isNotEmpty) {
       final lastAction = _substitutionStack.removeLast();
@@ -86,9 +101,57 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     }
   }
 
-  /// Abre el diálogo de sustitución. Cuando se confirma la selección,
-  /// se intercambia el jugador titular por el suplente seleccionado,
-  /// se elimina el suplente de la lista y se registra el cambio.
+  /// Muestra el diálogo de confirmación usando BasicConfirmationDialog.
+  /// Si showSubstitutions es true, se mostrarán los cambios; 
+  /// de lo contrario, se usará el mensaje que se pase en title.
+  Future<bool?> _showConfirmDialog({
+    required BuildContext context,
+    required double dialogFontSize,
+    required String title,
+    required bool showSubstitutions,
+  }) {
+    final watchSize = MediaQuery.of(context).size;
+    final double iconSize = watchSize.width * 0.07;
+    final String titleText = showSubstitutions
+        ? (substitutionChanges.isNotEmpty ? substitutionChanges.join("\n") : "")
+        : title;
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return BasicConfirmationDialog(
+              title: titleText,
+              confirmText: "",
+              cancelText: "",
+              onConfirm: () => Navigator.pop(context, true),
+              onCancel: () => Navigator.pop(context, false),
+              backgroundColor: Colors.grey[850]!,
+              confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
+              cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
+              confirmIcon:
+                  Icon(Icons.check, color: Colors.white, size: iconSize),
+              cancelIcon:
+                  Icon(Icons.close, color: Colors.white, size: iconSize),
+              middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
+              onMiddlePressed: () {
+                _undoLastSubstitution();
+                setDialogState(() {});
+              },
+              content: const SizedBox.shrink(),
+              buttonSize: watchSize.width * 0.12,
+              buttonSpacing: watchSize.width * 0.01,
+              titleFontSize: watchSize.width * 0.045,
+              dialogWidthFactor: 1,
+              dialogMinHeight: watchSize.height * 0.45,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Manejo del tap en un jugador titular para hacer el cambio.
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +174,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
             setState(() {
               final substitute = suplentes[selectedIndex];
               final leaving = titulares[titularIndex];
+
               _substitutionStack.add(
                 SubstitutionAction(
                   titularIndex: titularIndex,
@@ -118,11 +182,10 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                   newTitular: substitute,
                 ),
               );
-              // Intercambia el titular por el sustituto
+
               titulares[titularIndex] = substitute;
-              // Elimina el sustituto de la lista de suplentes
               suplentes.removeAt(selectedIndex);
-              // Registra el cambio
+
               substitutionChanges.add(
                 "Entra ${substitute['number']}, Sale ${leaving['number']}",
               );
@@ -133,10 +196,11 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     );
   }
 
-  /// Construye la tarjeta de jugador. La tarjeta ocupa el 25% de la altura de la pantalla
-  /// y sus elementos se ajustan proporcionalmente.
-  Widget buildPlayerTile(Map<String, dynamic> jugador,
-      {required bool esTitular, required VoidCallback? onTap}) {
+  Widget buildPlayerTile(
+    Map<String, dynamic> jugador, {
+    required bool esTitular,
+    required VoidCallback? onTap,
+  }) {
     final size = MediaQuery.of(context).size;
     final double cardHeight = size.height * 0.25;
     final double avatarRadius = cardHeight * 0.3;
@@ -145,7 +209,6 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     final double horizontalPadding = cardHeight * 0.2;
     final double topPadding = cardHeight * 0.05;
     final double bottomPadding = cardHeight * 0.1;
-
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -210,57 +273,10 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     );
   }
 
-  /// Diálogo de confirmación, igual que en local.
-  Future<bool?> _showConfirmDialog({
-    required BuildContext context,
-    required double dialogFontSize,
-    required String title,
-    bool showSubstitutions = false,
-  }) {
-    final watchSize = MediaQuery.of(context).size;
-    final double iconSize = watchSize.width * 0.07;
-    final String titleText = (showSubstitutions && substitutionChanges.isNotEmpty)
-        ? substitutionChanges.join("\n")
-        : "";
-    return showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return BasicConfirmationDialog(
-              title: titleText,
-              confirmText: "",
-              cancelText: "",
-              onConfirm: () => Navigator.pop(context, true),
-              onCancel: () => Navigator.pop(context, false),
-              backgroundColor: Colors.grey[850]!,
-              confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
-              cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
-              confirmIcon: Icon(Icons.check, color: Colors.white, size: iconSize),
-              cancelIcon: Icon(Icons.close, color: Colors.white, size: iconSize),
-              middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
-              onMiddlePressed: () {
-                _undoLastSubstitution();
-                setDialogState(() {});
-              },
-              content: const SizedBox.shrink(),
-              buttonSize: watchSize.width * 0.12,
-              buttonSpacing: watchSize.width * 0.01,
-              titleFontSize: watchSize.width * 0.045,
-              dialogWidthFactor: 1,
-              dialogMinHeight: watchSize.height * 0.45,
-            );
-          },
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final double dialogFontSize = size.shortestSide * 0.040;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
@@ -272,23 +288,68 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Botón de atrás:
+                  // Si no hubo sustituciones se retorna directamente la información original;
+                  // si hubo, se muestra el diálogo con el mensaje "Se descartarán los cambios realizados."
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     onPressed: () async {
-                      final bool? confirm = await _showConfirmDialog(
-                        context: context,
-                        dialogFontSize: dialogFontSize,
-                        title: "",
-                        showSubstitutions: false,
-                      );
-                      if (confirm == true) Navigator.pop(context);
+                      if (substitutionChanges.isEmpty) {
+                        final updatedNumbers = [
+                          for (var t in _originalTitulares) t['number'] as String,
+                          for (var s in _originalSuplentes) s['number'] as String,
+                        ];
+                        final updatedCategories = [
+                          for (var t in _originalTitulares) t['category'] as String?,
+                          for (var s in _originalSuplentes) s['category'] as String?,
+                        ];
+                        final updatedIsTitular = [
+                          for (var _ in _originalTitulares) true,
+                          for (var _ in _originalSuplentes) false,
+                        ];
+                        final returnData = {
+                          'numbers': updatedNumbers,
+                          'categories': updatedCategories,
+                          'isTitular': updatedIsTitular,
+                          'substitutionChanges': <String>[],
+                        };
+                        Navigator.pop(context, returnData);
+                      } else {
+                        final bool? confirm = await _showConfirmDialog(
+                          context: context,
+                          dialogFontSize: dialogFontSize,
+                          title: "Se descartarán los cambios realizados.",
+                          showSubstitutions: false,
+                        );
+                        if (confirm == true) {
+                          final updatedNumbers = [
+                            for (var t in _originalTitulares) t['number'] as String,
+                            for (var s in _originalSuplentes) s['number'] as String,
+                          ];
+                          final updatedCategories = [
+                            for (var t in _originalTitulares) t['category'] as String?,
+                            for (var s in _originalSuplentes) s['category'] as String?,
+                          ];
+                          final updatedIsTitular = [
+                            for (var _ in _originalTitulares) true,
+                            for (var _ in _originalSuplentes) false,
+                          ];
+                          final returnData = {
+                            'numbers': updatedNumbers,
+                            'categories': updatedCategories,
+                            'isTitular': updatedIsTitular,
+                            'substitutionChanges': <String>[],
+                          };
+                          Navigator.pop(context, returnData);
+                        }
+                      }
                     },
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Visita',
+                    teamName,
                     style: TextStyle(
                       fontSize: size.shortestSide * 0.07,
                       fontWeight: FontWeight.bold,
@@ -296,6 +357,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                     ),
                   ),
                   const SizedBox(width: 4),
+                  // Botón de confirmar: muestra los cambios y guarda las modificaciones.
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -308,7 +370,25 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                         showSubstitutions: true,
                       );
                       if (confirm == true) {
-                        Navigator.pop(context, substitutionChanges);
+                        final updatedNumbers = [
+                          for (var t in titulares) t['number'] as String,
+                          for (var s in suplentes) s['number'] as String,
+                        ];
+                        final updatedCategories = [
+                          for (var t in titulares) t['category'] as String?,
+                          for (var s in suplentes) s['category'] as String?,
+                        ];
+                        final updatedIsTitular = [
+                          for (var _ in titulares) true,
+                          for (var _ in suplentes) false,
+                        ];
+                        final returnData = {
+                          'numbers': updatedNumbers,
+                          'categories': updatedCategories,
+                          'isTitular': updatedIsTitular,
+                          'substitutionChanges': substitutionChanges,
+                        };
+                        Navigator.pop(context, returnData);
                       }
                     },
                   ),
@@ -318,52 +398,48 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
           ),
         ),
       ),
-      body: numbers.isEmpty
-          ? const Center(
-              child: Text(
-                'No hay datos disponibles',
-                style: TextStyle(color: Colors.white),
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                // Sección de Titulares
-                Text(
-                  "Titulares",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: size.shortestSide * 0.05,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...titulares.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  final jugador = entry.value;
-                  return buildPlayerTile(
-                    jugador,
-                    esTitular: true,
-                    onTap: () => _onTitularTap(index),
-                  );
-                }),
-                const SizedBox(height: 16),
-                // Sección de Suplentes (si existen)
-                if (suplentes.isNotEmpty) ...[
-                  Text(
-                    "Suplentes",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: size.shortestSide * 0.05,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...suplentes.map((jugador) =>
-                      buildPlayerTile(jugador, esTitular: false, onTap: null)),
-                ],
-              ],
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          Text(
+            "Titulares",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: size.shortestSide * 0.05,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+          const SizedBox(height: 8),
+          ...titulares.asMap().entries.map((entry) {
+            int index = entry.key;
+            final jugador = entry.value;
+            return buildPlayerTile(
+              jugador,
+              esTitular: true,
+              onTap: () => _onTitularTap(index),
+            );
+          }),
+          const SizedBox(height: 16),
+          if (suplentes.isNotEmpty) ...[
+            Text(
+              "Suplentes",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: size.shortestSide * 0.05,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...suplentes.map((jugador) {
+              return buildPlayerTile(
+                jugador,
+                esTitular: false,
+                onTap: null,
+              );
+            }),
+          ],
+        ],
+      ),
     );
   }
 }
