@@ -61,7 +61,22 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
     if (leftWindowCount >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("No quedan ventanas para ${widget.leftTeamName}."),
+          content: Center(
+            child: Text(
+              "No quedan ventanas para ${widget.leftTeamName}.",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+          ),
+          backgroundColor: const Color.fromARGB(255, 255, 80, 80),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         ),
       );
       return;
@@ -79,7 +94,8 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
     if (result is Map) {
       // Se espera que la pantalla de cambios retorne un Map con la llave 'substitutionChanges',
       // que es una lista de cadenas con los cambios realizados en esa ventana.
-      final List<String>? windowChanges = result['substitutionChanges'] as List<String>?;
+      final List<String>? windowChanges =
+          result['substitutionChanges'] as List<String>?;
       // Si se hicieron cambios (la lista no está vacía), se suma una ventana y se acumulan los cambios.
       if (windowChanges != null && windowChanges.isNotEmpty) {
         setState(() {
@@ -99,7 +115,22 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
     if (rightWindowCount >= 3) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("No quedan oportunidades (ventanas) para ${widget.rightTeamName}."),
+          content: Center(
+            child: Text(
+              "No quedan ventanas para ${widget.rightTeamName}.",
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+          ),
+          backgroundColor: const Color.fromARGB(255, 255, 80, 80),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         ),
       );
       return;
@@ -115,7 +146,8 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
       },
     );
     if (result is Map) {
-      final List<String>? windowChanges = result['substitutionChanges'] as List<String>?;
+      final List<String>? windowChanges =
+          result['substitutionChanges'] as List<String>?;
       if (windowChanges != null && windowChanges.isNotEmpty) {
         setState(() {
           rightWindowCount++;
@@ -157,11 +189,19 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                             onConfirm: () => Navigator.pop(context, true),
                             onCancel: () => Navigator.pop(context, false),
                             backgroundColor: Colors.grey[850]!,
-                            confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
-                            cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
-                            confirmIcon: const Icon(Icons.check, color: Colors.white),
-                            cancelIcon: const Icon(Icons.close, color: Colors.white),
-                            buttonSpacing: 4.0,
+                            confirmButtonColor:
+                                const Color.fromARGB(255, 18, 108, 210),
+                            cancelButtonColor:
+                                const Color.fromARGB(255, 242, 20, 20),
+                            confirmIcon:
+                                const Icon(Icons.check, color: Colors.white),
+                            cancelIcon:
+                                const Icon(Icons.close, color: Colors.white),
+                            buttonSpacing: 10.0,
+                            buttonSize: 40,
+                            dialogHeightFactor: 0.5,
+                            dialogWidthFactor:
+                                0.7, // Con este valor se ajusta el ancho al 70% de la pantalla.
                           );
                         },
                       );
@@ -192,7 +232,7 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                       children: [
                         // Se muestra dinámicamente el estado de cambios y ventanas
                         Text(
-                          "$leftChangeCount cambios en $leftWindowCount ventanas",
+                          "$leftChangeCount cambios \n $leftWindowCount ventanas",
                           style: TextStyle(
                             fontSize: size.width * 0.055,
                             color: Colors.white,
@@ -231,7 +271,7 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          "$rightChangeCount cambios en $rightWindowCount ventanas",
+                          "$rightChangeCount cambios \n $rightWindowCount ventanas",
                           style: TextStyle(
                             fontSize: size.width * 0.055,
                             color: Colors.white,

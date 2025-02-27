@@ -50,29 +50,27 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Encabezado: en un SizedBox con altura fija
+            // Encabezado
             SizedBox(
-              height: screenSize.height * 0.18,
+              height: screenSize.height * 0.25,
               child: Stack(
                 children: [
-                  // Título centrado
                   Center(
                     child: Text(
                       'Suplentes disponibles',
                       style: TextStyle(
-                        fontSize: screenSize.width * 0.045,
+                        fontSize: screenSize.width * 0.055,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  // Botón de back, posicionado a la izquierda
                   Positioned(
                     left: 0,
                     right: 0,
                     top: -25,
-                    bottom: -50,
+                    bottom: -60,
                     child: IconButton(
                       icon: Icon(
                         Icons.arrow_back,
@@ -85,64 +83,66 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                 ],
               ),
             ),
-            // Quitamos el SizedBox que había aquí para que la lista inicie de inmediato
-            // Lista que ocupa aproximadamente 45% de la pantalla
+
+            // Lista de jugadores
             Expanded(
               child: ListView.builder(
                 itemCount: widget.availableNumbers.length,
                 itemBuilder: (context, index) {
                   return Container(
-                    // Se mantiene la altura para ver 2 tarjetas
-                    height: (screenSize.height * 0.45) / 2,
-                    // Se elimina la margin vertical
+                    // Ajusta aquí el margen para disminuir la separación
+                    margin: const EdgeInsets.only(bottom: 0),
                     child: ListTile(
+                      // Hace el ListTile más compacto
+                      dense: true,
+                      // También puedes controlar el padding interno
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 0,
+                      ),
+                      tileColor: selected[index]
+                          ? Colors.white12
+                          : Colors.transparent,
                       leading: CircleAvatar(
-                        radius: screenSize.width * 0.06, // Se reduce el radio
+                        radius: screenSize.width * 0.06,
                         backgroundColor:
                             getCircleColor(widget.availableCategories[index]),
                         child: Text(
                           widget.availableNumbers[index],
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: screenSize.width * 0.045,
+                            fontSize: screenSize.width * 0.065,
                           ),
                         ),
                       ),
                       title: Text(
-                        widget.availableNumbers[index],
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: screenSize.width * 0.055,
-                        ),
-                      ),
-                      subtitle: Text(
                         widget.availableCategories[index] ?? 'S/C',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: screenSize.width * 0.055,
                         ),
                       ),
-                      trailing: Checkbox(
-                        value: selected[index],
-                        onChanged: (val) {
-                          setState(() {
-                            if (val == true) {
-                              for (int i = 0; i < selected.length; i++) {
-                                selected[i] = false;
-                              }
-                              selected[index] = true;
-                            } else {
-                              selected[index] = false;
-                            }
-                          });
-                        },
+                      trailing: Icon(
+                        selected[index]
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: selected[index] ? Colors.green : Colors.grey,
                       ),
+                      onTap: () {
+                        setState(() {
+                          for (int i = 0; i < selected.length; i++) {
+                            selected[i] = false;
+                          }
+                          selected[index] = true;
+                        });
+                      },
                     ),
                   );
                 },
               ),
             ),
-            // Botón de confirmar con altura fija ~10% de la pantalla
+
+            // Botón de Confirmar
             SizedBox(
               height: screenSize.height * 0.15,
               child: ElevatedButton(
@@ -150,7 +150,9 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                     ? () {
                         final selectedIndices = <int>[];
                         for (int i = 0; i < selected.length; i++) {
-                          if (selected[i]) selectedIndices.add(i);
+                          if (selected[i]) {
+                            selectedIndices.add(i);
+                          }
                         }
                         widget.onConfirm(selectedIndices);
                         Navigator.pop(context);
@@ -160,10 +162,6 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                   backgroundColor:
                       hasSelection ? Colors.green[600] : Colors.grey[700],
                   elevation: hasSelection ? 4 : 0,
-                  padding: EdgeInsets.symmetric(
-                    vertical: screenSize.width * 0.02,
-                    horizontal: screenSize.width * 0.04,
-                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

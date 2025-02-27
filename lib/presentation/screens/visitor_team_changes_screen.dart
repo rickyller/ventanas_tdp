@@ -198,8 +198,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
       return cat == 'med';
     }).length;
 
-    debugPrint(
-        "Validación titulares VISITA => men=$countMen, med=$countMed");
+    debugPrint("Validación titulares VISITA => men=$countMen, med=$countMed");
 
     // 1) al menos 1 men
     if (countMen < 1) {
@@ -227,17 +226,18 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     required bool showSubstitutions,
   }) {
     final watchSize = MediaQuery.of(context).size;
-    final double iconSize = watchSize.width * 0.07;
-    final String titleText =
-        (showSubstitutions && substitutionChanges.isNotEmpty)
-            ? substitutionChanges.join("\n")
-            : title;
-
+    final double iconSize = watchSize.width * 0.09;
     return showDialog<bool>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            // Calcular el título dinámicamente, según el estado actual de substitutionChanges.
+            final String titleText = showSubstitutions
+                ? (substitutionChanges.isNotEmpty
+                    ? substitutionChanges.join("\n")
+                    : "No se han realizado sustituciones")
+                : title;
             return BasicConfirmationDialog(
               title: titleText,
               confirmText: "",
@@ -251,16 +251,16 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                   Icon(Icons.check, color: Colors.white, size: iconSize),
               cancelIcon:
                   Icon(Icons.close, color: Colors.white, size: iconSize),
-              middleIcon:
-                  Icon(Icons.undo, color: Colors.white, size: iconSize),
+              middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
               onMiddlePressed: () {
                 _undoLastSubstitution();
+                // Al actualizar la lista y llamar a setDialogState, se recalculará titleText.
                 setDialogState(() {});
               },
               content: const SizedBox.shrink(),
-              buttonSize: watchSize.width * 0.12,
-              buttonSpacing: watchSize.width * 0.01,
-              titleFontSize: watchSize.width * 0.045,
+              buttonSize: 38,
+              buttonSpacing: 15,
+              titleFontSize: watchSize.width * 0.06,
               dialogWidthFactor: 1,
               dialogMinHeight: watchSize.height * 0.45,
             );
@@ -274,7 +274,24 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay suplentes disponibles')),
+        SnackBar(
+          content: Center(
+            child: Text(
+              'No hay suplentes',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
+            ),
+          ),
+          backgroundColor: const Color.fromARGB(255, 255, 80, 80),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        ),
       );
       return;
     }
@@ -418,12 +435,16 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                       // Igual que en Local: si no hubo cambios, sale; si hubo, confirma.
                       if (substitutionChanges.isEmpty) {
                         final updatedNumbers = [
-                          for (var t in _originalTitulares) t['number'] as String,
-                          for (var s in _originalSuplentes) s['number'] as String,
+                          for (var t in _originalTitulares)
+                            t['number'] as String,
+                          for (var s in _originalSuplentes)
+                            s['number'] as String,
                         ];
                         final updatedCategories = [
-                          for (var t in _originalTitulares) t['category'] as String?,
-                          for (var s in _originalSuplentes) s['category'] as String?,
+                          for (var t in _originalTitulares)
+                            t['category'] as String?,
+                          for (var s in _originalSuplentes)
+                            s['category'] as String?,
                         ];
                         final updatedIsTitular = [
                           for (var _ in _originalTitulares) true,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class BasicConfirmationDialog extends StatelessWidget {
   final String title;
   final String confirmText;
@@ -14,10 +15,11 @@ class BasicConfirmationDialog extends StatelessWidget {
   final Widget? middleIcon;
   final VoidCallback? onMiddlePressed;
   final double? buttonSize;
-  final double? dialogWidthFactor;
   final double? buttonSpacing;
   final double? titleFontSize;
-  final double? dialogMinHeight; // Altura mínima personalizada
+  final double? dialogMinHeight;
+  final double? dialogHeightFactor; // Nueva propiedad
+  final double? dialogWidthFactor; // Nueva propiedad
 
   const BasicConfirmationDialog({
     Key? key,
@@ -39,20 +41,25 @@ class BasicConfirmationDialog extends StatelessWidget {
     this.buttonSpacing,
     this.titleFontSize,
     this.dialogMinHeight,
+    this.dialogHeightFactor, // Inicialización de la nueva propiedad
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
+    // Si no se provee dialogWidthFactor, se usa 1.0 para abarcar casi todo el ancho
     final double effectiveDialogWidth =
-        screenSize.width * (dialogWidthFactor ?? 0.9);
+        screenSize.width * (dialogWidthFactor ?? 1.0);
     final double effectiveTitleFontSize =
         titleFontSize ?? screenSize.width * 0.07;
     final double effectiveButtonSize = buttonSize ?? screenSize.width * 0.15;
     final double effectiveMinHeight =
         dialogMinHeight ?? screenSize.height * 0.25;
+    final double effectiveDialogHeight =
+        screenSize.height * (dialogHeightFactor ?? 0.5); // Altura efectiva del diálogo
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       backgroundColor: backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(screenSize.width * 0.1),
@@ -62,6 +69,7 @@ class BasicConfirmationDialog extends StatelessWidget {
           constraints: BoxConstraints(
             maxWidth: effectiveDialogWidth,
             minHeight: effectiveMinHeight,
+            maxHeight: effectiveDialogHeight, // Altura máxima del diálogo
           ),
           child: Column(
             mainAxisSize: MainAxisSize.max,
@@ -70,21 +78,31 @@ class BasicConfirmationDialog extends StatelessWidget {
               // Contenido superior: título y contenido opcional
               Column(
                 children: [
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: effectiveTitleFontSize,
-                      fontWeight: FontWeight.bold,
+                  // Envolvemos el título en un contenedor con altura máxima y scroll
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      // Por ejemplo, si hay más de 2 cambios, se limitará a un 15% de la altura de pantalla
+                      maxHeight: screenSize.height * 0.22,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: effectiveTitleFontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(height: screenSize.width * 0.05),
                   if (content != null) content!,
-                  if (content != null) SizedBox(height: screenSize.width * 0.05),
+                  if (content != null)
+                    SizedBox(height: screenSize.width * 0.05),
                 ],
               ),
-              // Espacio para forzar que la fila quede abajo
+              // Fila de botones en la parte inferior
               Container(
                 width: effectiveDialogWidth,
                 child: Row(

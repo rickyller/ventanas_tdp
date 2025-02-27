@@ -22,7 +22,7 @@ class NumberInputDialog extends StatefulWidget {
   const NumberInputDialog({
     Key? key,
     this.buttonText = 'Aceptar',
-    this.backgroundColor = const Color(0xFF123C52),
+    this.backgroundColor = const Color.fromARGB(255, 45, 48, 50),
     this.buttonColor = const Color(0xFF398164),
     this.titleColor = Colors.white,
     this.textColor = Colors.black,
@@ -63,20 +63,24 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    final double dialogWidth = screenSize.width * 0.8;
-    final double buttonSize = screenSize.width * 0.131;
+    // Usamos casi todo el ancho de la pantalla, por ejemplo, 95%
+    final double effectiveDialogWidth = screenSize.width * 0.95;
+    // Incrementamos el tamaño de los botones a un 20% del ancho de pantalla
+    final double buttonSize = screenSize.width * 0.2;
 
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       backgroundColor: widget.backgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(screenSize.width * 0.1),
       ),
       content: SingleChildScrollView(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: dialogWidth),
+          constraints: BoxConstraints(maxWidth: effectiveDialogWidth),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Fila de botones de categoría
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -86,6 +90,7 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
                 ],
               ),
               const SizedBox(height: 10),
+              // Campo de entrada numérica
               SizedBox(
                 height: 30,
                 child: TextField(
@@ -96,7 +101,8 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
                   decoration: InputDecoration(
                     counterText: '',
                     hintText: widget.defaultNumber,
-                    hintStyle: TextStyle(color: Colors.black, fontSize: 14),
+                    hintStyle:
+                        const TextStyle(color: Colors.black, fontSize: 14),
                     errorText: errorText,
                     filled: true,
                     fillColor: Colors.white,
@@ -120,6 +126,7 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
                 ),
               ),
               const SizedBox(height: 10),
+              // Botones de aceptar y cancelar
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -167,7 +174,8 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
         ),
         child: Text(
           category,
-          style: const TextStyle(fontSize: 7.9, color: Colors.white),
+          // Se aumenta la fuente para las bolitas de categoría
+          style: const TextStyle(fontSize: 14, color: Colors.white),
         ),
       ),
     );
@@ -177,7 +185,7 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
     final input = _controller.text;
     if (selectedCategory == null) {
       setState(() {
-        errorText = 'Seleccione una categoría';
+        errorText = 'Seleccione categoría';
       });
       return;
     }

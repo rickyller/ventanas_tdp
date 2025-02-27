@@ -35,6 +35,10 @@ class _InitialScreenState extends State<InitialScreen> {
   bool editingLeft = false;
   bool editingRight = false;
 
+  // Controladores para el scroll en cada lista
+  final ScrollController leftScrollController = ScrollController();
+  final ScrollController rightScrollController = ScrollController();
+
   // Contador para debug: si se presiona dos veces se omiten las validaciones.
   int _debugCheckCount = 0;
 
@@ -59,6 +63,8 @@ class _InitialScreenState extends State<InitialScreen> {
   void dispose() {
     leftTeamController.dispose();
     rightTeamController.dispose();
+    leftScrollController.dispose();
+    rightScrollController.dispose();
     super.dispose();
   }
 
@@ -163,6 +169,7 @@ class _InitialScreenState extends State<InitialScreen> {
                       // Lista de bolitas (equipo local)
                       Expanded(
                         child: ListView.builder(
+                          controller: leftScrollController,
                           itemCount: leftNumbers.length + 1,
                           itemBuilder: (context, index) {
                             if (index < leftNumbers.length) {
@@ -222,6 +229,17 @@ class _InitialScreenState extends State<InitialScreen> {
                                       // Los jugadores agregados más allá del once inicial son suplentes
                                       leftIsTitular.add(false);
                                     });
+                                    // Desplazar la lista para mostrar el botón "+"
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      leftScrollController.animateTo(
+                                        leftScrollController
+                                            .position.maxScrollExtent,
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        curve: Curves.easeOut,
+                                      );
+                                    });
                                   },
                                 ),
                               );
@@ -240,13 +258,13 @@ class _InitialScreenState extends State<InitialScreen> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: const [
                       Text("May",
-                          style: TextStyle(color: Colors.red, fontSize: 9)),
+                          style: TextStyle(color: Colors.red, fontSize: 12)),
                       SizedBox(height: 4),
                       Text("Med",
-                          style: TextStyle(color: Colors.blue, fontSize: 9)),
+                          style: TextStyle(color: Colors.blue, fontSize: 12)),
                       SizedBox(height: 4),
                       Text("men",
-                          style: TextStyle(color: Colors.yellow, fontSize: 9)),
+                          style: TextStyle(color: Colors.yellow, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -303,6 +321,7 @@ class _InitialScreenState extends State<InitialScreen> {
                       // Lista de bolitas (equipo visitante)
                       Expanded(
                         child: ListView.builder(
+                          controller: rightScrollController,
                           itemCount: rightNumbers.length + 1,
                           itemBuilder: (context, index) {
                             if (index < rightNumbers.length) {
@@ -360,6 +379,17 @@ class _InitialScreenState extends State<InitialScreen> {
                                       rightCategories.add(null);
                                       // Los jugadores agregados más allá del once inicial son suplentes
                                       rightIsTitular.add(false);
+                                    });
+                                    // Desplazar la lista para mostrar el botón "+"
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      rightScrollController.animateTo(
+                                        rightScrollController
+                                            .position.maxScrollExtent,
+                                        duration:
+                                            const Duration(milliseconds: 300),
+                                        curve: Curves.easeOut,
+                                      );
                                     });
                                   },
                                 ),
@@ -460,75 +490,65 @@ class _InitialScreenState extends State<InitialScreen> {
                     if (leftErrors.isNotEmpty || rightErrors.isNotEmpty) {
                       String errorMessage = "";
                       if (leftErrors.isNotEmpty) {
-                        errorMessage += leftErrors.join("\n");
+                      errorMessage += leftErrors.join("\n");
                       }
                       if (rightErrors.isNotEmpty) {
-                        if (errorMessage.isNotEmpty) {
-                          errorMessage += "\n";
-                        }
-                        errorMessage += rightErrors.join("\n");
+                      if (errorMessage.isNotEmpty) {
+                        errorMessage += "\n";
+                      }
+                      errorMessage += rightErrors.join("\n");
                       }
                       showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            backgroundColor: Colors.grey[900],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                        backgroundColor: Colors.grey[900],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        title: const Center(
+                          child: Text(
+                          "Verifica los equipos",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          ),
+                        ),
+                        content: SingleChildScrollView(
+                          child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 10),
+                            // Errores específicos detectados.
+                            Text(
+                            errorMessage,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
                             ),
-                            title: const Center(
-                              child: Text(
-                                "Error de validación",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            textAlign: TextAlign.right,
                             ),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Explicación breve de las reglas.
-                                  const Text(
-                                    "Para poder continuar, revisa los siguientes requisitos:\n\n"
-                                    "• No se pueden repetir números en un mismo equipo.\n"
-                                    "• Los titulares deben incluir al menos 2 medianos (Med o men) y 1 menor (men), "
-                                    "  o bien 3 menores en total.",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  // Errores específicos detectados.
-                                  Text(
-                                    errorMessage,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          ],
+                          ),
+                        ),
+                        actions: [
+                          Center(
+                          child: TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text(
+                            "Aceptar",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.blue,
                             ),
-                            actions: [
-                              Center(
-                                child: TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text(
-                                    "Aceptar",
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                            ),
+                          ),
+                          ),
+                        ],
+                        );
+                      },
                       );
                       return;
                     }
