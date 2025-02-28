@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class BasicConfirmationDialog extends StatelessWidget {
-  final String title;
+  final Widget? title; // Ahora es opcional y puede ser cualquier widget.
   final String confirmText;
   final String cancelText;
   final VoidCallback onConfirm;
@@ -23,7 +23,7 @@ class BasicConfirmationDialog extends StatelessWidget {
 
   const BasicConfirmationDialog({
     Key? key,
-    required this.title,
+    this.title, // Ya no es required
     required this.confirmText,
     required this.cancelText,
     required this.onConfirm,
@@ -47,16 +47,16 @@ class BasicConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size screenSize = MediaQuery.of(context).size;
-    // Si no se provee dialogWidthFactor, se usa 1.0 para abarcar casi todo el ancho
+    // Si no se provee dialogWidthFactor, se usa 1.0 para abarcar casi todo el ancho.
     final double effectiveDialogWidth =
         screenSize.width * (dialogWidthFactor ?? 1.0);
-    final double effectiveTitleFontSize =
-        titleFontSize ?? screenSize.width * 0.07;
+    // effectiveTitleFontSize se usaba antes cuando el título era un string;
+    // ahora, si se requiere, se podría aplicar al widget del título.
     final double effectiveButtonSize = buttonSize ?? screenSize.width * 0.15;
     final double effectiveMinHeight =
         dialogMinHeight ?? screenSize.height * 0.25;
     final double effectiveDialogHeight =
-        screenSize.height * (dialogHeightFactor ?? 0.5); // Altura efectiva del diálogo
+        screenSize.height * (dialogHeightFactor ?? 0.5);
 
     return AlertDialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -69,71 +69,54 @@ class BasicConfirmationDialog extends StatelessWidget {
           constraints: BoxConstraints(
             maxWidth: effectiveDialogWidth,
             minHeight: effectiveMinHeight,
-            maxHeight: effectiveDialogHeight, // Altura máxima del diálogo
+            maxHeight: effectiveDialogHeight,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Contenido superior: título y contenido opcional
-              Column(
-                children: [
-                  // Envolvemos el título en un contenedor con altura máxima y scroll
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      // Por ejemplo, si hay más de 2 cambios, se limitará a un 15% de la altura de pantalla
-                      maxHeight: screenSize.height * 0.22,
-                    ),
-                    child: SingleChildScrollView(
-                      child: Text(
-                        title,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: effectiveTitleFontSize,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: screenSize.width * 0.05),
-                  if (content != null) content!,
-                  if (content != null)
-                    SizedBox(height: screenSize.width * 0.05),
-                ],
-              ),
-              // Fila de botones en la parte inferior
-              Container(
-                width: effectiveDialogWidth,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    if (cancelText.isNotEmpty || cancelIcon != null)
-                      _buildDialogButton(
-                        child: cancelIcon ?? Text(cancelText),
-                        color: cancelButtonColor,
-                        size: effectiveButtonSize,
-                        onPressed: onCancel,
-                      ),
-                    if (middleIcon != null)
-                      _buildDialogButton(
-                        child: middleIcon!,
-                        color: Colors.orange,
-                        size: effectiveButtonSize,
-                        onPressed: onMiddlePressed ?? () {},
-                      ),
-                    if (confirmText.isNotEmpty || confirmIcon != null)
-                      _buildDialogButton(
-                        child: confirmIcon ?? Text(confirmText),
-                        color: confirmButtonColor,
-                        size: effectiveButtonSize,
-                        onPressed: onConfirm,
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          // ...
+child: Column(
+  crossAxisAlignment: CrossAxisAlignment.stretch,
+  children: [
+    // Área superior: título y contenido opcional.
+    if (title != null) title!,
+    if (content != null) ...[
+      SizedBox(height: screenSize.width * 0.05),
+      content!,
+    ],
+    // En lugar de Spacer(), usamos un SizedBox de separación pequeño.
+    SizedBox(height: 12),
+    // Contenedor fijo para los botones.
+    Container(
+      // Por ejemplo, fijamos la altura a effectiveButtonSize (o a un valor menor si lo deseas).
+      height: effectiveButtonSize,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          if (cancelText.isNotEmpty || cancelIcon != null)
+            _buildDialogButton(
+              child: cancelIcon ?? Text(cancelText),
+              color: cancelButtonColor,
+              size: effectiveButtonSize,
+              onPressed: onCancel,
+            ),
+          if (middleIcon != null)
+            _buildDialogButton(
+              child: middleIcon!,
+              color: Colors.orange,
+              size: effectiveButtonSize,
+              onPressed: onMiddlePressed ?? () {},
+            ),
+          if (confirmText.isNotEmpty || confirmIcon != null)
+            _buildDialogButton(
+              child: confirmIcon ?? Text(confirmText),
+              color: confirmButtonColor,
+              size: effectiveButtonSize,
+              onPressed: onConfirm,
+            ),
+        ],
+      ),
+    ),
+  ],
+),
+
         ),
       ),
     );

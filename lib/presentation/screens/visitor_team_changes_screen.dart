@@ -239,7 +239,7 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
                     : "No se han realizado sustituciones")
                 : title;
             return BasicConfirmationDialog(
-              title: titleText,
+              title: Text(titleText),
               confirmText: "",
               cancelText: "",
               onConfirm: () => Navigator.pop(context, true),

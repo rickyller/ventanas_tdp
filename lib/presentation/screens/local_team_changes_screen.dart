@@ -104,29 +104,35 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
       setState(() {});
     }
   }
+void _showValidationError(String message) {
+  final Size screenSize = MediaQuery.of(context).size;
+  final double dialogWidth = screenSize.width * 0.8;
+  // Calculamos el alto disponible restando los insetPadding (8 superior y 8 inferior)
+  final double availableHeight = screenSize.height - 16;
+  // Usamos el 50% de la altura de pantalla, o el alto disponible si es menor
+  final double dialogHeight = screenSize.height * 0.5 < availableHeight
+      ? screenSize.height * 0.5
+      : availableHeight;
 
-  void _showValidationError(String message) {
-    final Size screenSize = MediaQuery.of(context).size;
-    final double dialogWidth = screenSize.width * 0.8;
-    final double dialogHeight = screenSize.height * 0.5;
-
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: AlertDialog(
-            insetPadding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            backgroundColor: Colors.grey[850],
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(screenSize.width * 0.08),
-            ),
-            content: SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: dialogWidth,
-                  maxHeight: dialogHeight,
-                ),
+  showDialog<void>(
+    context: context,
+    builder: (context) {
+      return SafeArea(
+        child: AlertDialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          // Se elimina el padding interno del contenido para aprovechar el espacio
+          contentPadding: EdgeInsets.zero,
+          backgroundColor: Colors.grey[850],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenSize.width * 0.08),
+          ),
+          content: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: SingleChildScrollView(
+              child: Padding(
+                // Se utiliza un padding reducido para no forzar espacio extra
+                padding: const EdgeInsets.all(8.0),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -135,39 +141,34 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: screenSize.width * 0.045,
+                        fontSize: screenSize.width * 0.064,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: screenSize.height * 0.02),
+                    SizedBox(height: screenSize.height * 0.015),
                     Text(
                       message,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white70,
-                        fontSize: screenSize.width * 0.04,
+                        fontSize: screenSize.width * 0.05,
                       ),
                     ),
-                    SizedBox(height: screenSize.height * 0.05),
+                    SizedBox(height: screenSize.height * 0.03),
                     Align(
                       alignment: Alignment.center,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: dialogWidth * 0.4,
-                        ),
+                      child: IntrinsicWidth(
                         child: TextButton(
                           onPressed: () => Navigator.pop(context),
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.blueAccent,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             textStyle: TextStyle(
-                              fontSize: screenSize.width * 0.055,
+                              fontSize: screenSize.width * 0.065,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: const Text("Aceptar"),
-                          ),
+                          child: const Text("Aceptar"),
                         ),
                       ),
                     ),
@@ -176,10 +177,11 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
               ),
             ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   bool _validarTitulares() {
     // Contamos en forma case-insensitive
@@ -211,58 +213,125 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
     }
 
     return true;
-  }
-
-  Future<bool?> _showConfirmDialog({
-    required BuildContext context,
-    required double dialogFontSize,
-    required String title,
-    required bool showSubstitutions,
-  }) {
-    final watchSize = MediaQuery.of(context).size;
-    final double iconSize = watchSize.width * 0.09;
-    return showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            // Calcular el título dinámicamente, según el estado actual de substitutionChanges.
-            final String titleText = showSubstitutions
-                ? (substitutionChanges.isNotEmpty
-                    ? substitutionChanges.join("\n")
-                    : "No se han realizado sustituciones")
-                : title;
-            return BasicConfirmationDialog(
-              title: titleText,
-              confirmText: "",
-              cancelText: "",
-              onConfirm: () => Navigator.pop(context, true),
-              onCancel: () => Navigator.pop(context, false),
-              backgroundColor: Colors.grey[850]!,
-              confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
-              cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
-              confirmIcon:
-                  Icon(Icons.check, color: Colors.white, size: iconSize),
-              cancelIcon:
-                  Icon(Icons.close, color: Colors.white, size: iconSize),
-              middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
-              onMiddlePressed: () {
-                _undoLastSubstitution();
-                // Al actualizar la lista y llamar a setDialogState, se recalculará titleText.
-                setDialogState(() {});
-              },
-              content: const SizedBox.shrink(),
-              buttonSize: 38,
-              buttonSpacing: 15,
-              titleFontSize: watchSize.width * 0.06,
-              dialogWidthFactor: 1,
-              dialogMinHeight: watchSize.height * 0.45,
+  }Future<bool?> _showConfirmDialog({
+  required BuildContext context,
+  required double dialogFontSize,
+  required String title,
+  required bool showSubstitutions,
+}) {
+  final watchSize = MediaQuery.of(context).size;
+  final double iconSize = watchSize.width * 0.09;
+  
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          Widget titleWidget;
+          if (showSubstitutions) {
+            if (substitutionChanges.isNotEmpty) {
+              int half = (substitutionChanges.length / 2).ceil();
+              List<String> leftList = substitutionChanges.sublist(0, half);
+              List<String> rightList = substitutionChanges.sublist(half);
+              titleWidget = Container(
+                height: watchSize.height * 0.25, // Área fija para las sustituciones
+                child: SingleChildScrollView(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: leftList
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  child: Text(
+                                    s,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: watchSize.width * 0.055,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: rightList
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  child: Text(
+                                    s,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: watchSize.width * 0.055,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            } else {
+              titleWidget = Text(
+                "No se han realizado sustituciones",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: watchSize.width * 0.065,
+                ),
+                textAlign: TextAlign.center,
+              );
+            }
+          } else {
+            titleWidget = Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: watchSize.width * 0.06,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             );
-          },
-        );
-      },
-    );
-  }
+          }
+          
+          return BasicConfirmationDialog(
+            title: titleWidget, // Se usa el widget en el área del título
+            confirmText: "",
+            cancelText: "",
+            onConfirm: () => Navigator.pop(context, true),
+            onCancel: () => Navigator.pop(context, false),
+            backgroundColor: Colors.grey[850]!,
+            confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
+            cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
+            confirmIcon: Icon(Icons.check, color: Colors.white, size: iconSize),
+            cancelIcon: Icon(Icons.close, color: Colors.white, size: iconSize),
+            middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
+            onMiddlePressed: () {
+              _undoLastSubstitution();
+              setDialogState(() {}); // Actualiza el diálogo dinámicamente
+            },
+            content: null, // Sin contenido adicional
+            buttonSize: 40, // Tamaño de botón reducido
+            buttonSpacing: 10,
+            dialogWidthFactor: 1,
+            dialogMinHeight: watchSize.height * 0.45,
+          );
+        },
+      );
+    },
+  );
+}
+
 
   void _onTitularTap(int titularIndex) {
     if (suplentes.isEmpty) {
@@ -273,10 +342,9 @@ class _LocalTeamChangesScreenState extends State<LocalTeamChangesScreen> {
               'No hay suplentes',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white
-              ),
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
           ),
           backgroundColor: const Color.fromARGB(255, 255, 80, 80),
