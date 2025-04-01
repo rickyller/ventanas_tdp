@@ -60,126 +60,153 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
     _controller.text = widget.defaultNumber;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final Size screenSize = MediaQuery.of(context).size;
-    // Usamos casi todo el ancho de la pantalla, por ejemplo, 95%
-    final double effectiveDialogWidth = screenSize.width * 0.95;
-    // Incrementamos el tamaño de los botones a un 20% del ancho de pantalla
-    final double buttonSize = screenSize.width * 0.2;
+@override
+Widget build(BuildContext context) {
+  final Size screenSize = MediaQuery.of(context).size;
+  // Usamos casi todo el ancho disponible para el diálogo.
+  final double effectiveDialogWidth = screenSize.width * 0.95;
+  // Tamaño de los botones, en función del ancho de pantalla.
+  final double buttonSize = screenSize.width * 0.18;
+  // Tamaño de la fuente para los textos y botones.
+  final double textFontSize = screenSize.width * 0.04;
+  // Altura del campo de entrada (puedes ajustar según lo necesites).
+  final double inputHeight = screenSize.height * 0.15;
 
-    return AlertDialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      backgroundColor: widget.backgroundColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(screenSize.width * 0.1),
-      ),
-      content: SingleChildScrollView(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: effectiveDialogWidth),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Fila de botones de categoría
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildCategoryButton("May", buttonSize),
-                  _buildCategoryButton("Med", buttonSize),
-                  _buildCategoryButton("men", buttonSize),
-                ],
-              ),
-              const SizedBox(height: 10),
-              // Campo de entrada numérica
-              SizedBox(
-                height: 30,
-                child: TextField(
-                  controller: _controller,
-                  keyboardType: TextInputType.number,
-                  maxLength: 3,
-                  style: TextStyle(color: widget.textColor, fontSize: 14),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    hintText: widget.defaultNumber,
-                    hintStyle:
-                        const TextStyle(color: Colors.black, fontSize: 14),
-                    errorText: errorText,
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(
-                        vertical: 2.0, horizontal: 4.0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
+  return AlertDialog(
+    insetPadding: EdgeInsets.symmetric(
+      horizontal: screenSize.width * 0.05,
+      vertical: screenSize.height * 0.05,
+    ),
+    backgroundColor: widget.backgroundColor,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(screenSize.width * 0.1),
+    ),
+    content: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: effectiveDialogWidth),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Fila de botones de categoría
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildCategoryButton("May", buttonSize, textFontSize),
+                _buildCategoryButton("Med", buttonSize, textFontSize),
+                _buildCategoryButton("men", buttonSize, textFontSize),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Campo de entrada numérica
+            SizedBox(
+              height: inputHeight,
+              child: TextField(
+                controller: _controller,
+                keyboardType: TextInputType.number,
+                maxLength: 3,
+                style: TextStyle(color: widget.textColor, fontSize: textFontSize),
+                decoration: InputDecoration(
+                  counterText: '',
+                  hintText: widget.defaultNumber,
+                  hintStyle: TextStyle(color: Colors.black, fontSize: textFontSize),
+                  errorText: errorText,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
-                  onChanged: (value) {
-                    if (value.length > 3) {
-                      setState(() {
-                        errorText = 'Máximo 3 dígitos';
-                      });
-                    } else {
-                      setState(() {
-                        errorText = null;
-                      });
-                    }
-                  },
                 ),
+                onChanged: (value) {
+                  if (value.length > 3) {
+                    setState(() {
+                      errorText = 'Máximo 3 dígitos';
+                    });
+                  } else {
+                    setState(() {
+                      errorText = null;
+                    });
+                  }
+                },
               ),
-              const SizedBox(height: 10),
-              // Botones de aceptar y cancelar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (widget.onCancel != null)
-                    _buildDialogButton(
-                      child: const Icon(Icons.close, color: Colors.white),
-                      color: Colors.red,
-                      size: buttonSize,
-                      onPressed: widget.onCancel!,
-                    ),
-                  if (widget.onCancel != null)
-                    SizedBox(width: screenSize.width * 0.05),
+            ),
+            const SizedBox(height: 10),
+            // Botones de aceptar y cancelar
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (widget.onCancel != null)
                   _buildDialogButton(
-                    child: const Icon(Icons.check, color: Colors.white),
-                    color: widget.buttonColor,
+                    child: Icon(Icons.close, color: Colors.white, size: textFontSize),
+                    color: Colors.red,
                     size: buttonSize,
-                    onPressed: _handleAccept,
+                    onPressed: widget.onCancel!,
                   ),
-                ],
-              ),
-            ],
-          ),
+                if (widget.onCancel != null)
+                  SizedBox(width: screenSize.width * 0.05),
+                _buildDialogButton(
+                  child: Icon(Icons.check, color: Colors.white, size: textFontSize),
+                  color: widget.buttonColor,
+                  size: buttonSize,
+                  onPressed: _handleAccept,
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildCategoryButton(String category, double size) {
-    bool isSelected = (selectedCategory == category);
-    final Color catColor = _mapCategoryToColor(category);
+/// Se agregó el parámetro [textFontSize] para adaptar el tamaño de la fuente.
+Widget _buildCategoryButton(String category, double size, double textFontSize) {
+  bool isSelected = (selectedCategory == category);
+  final Color catColor = _mapCategoryToColor(category);
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ElevatedButton(
-        onPressed: () {
-          setState(() {
-            selectedCategory = category;
-          });
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? catColor : catColor.withOpacity(0.1),
-          shape: const CircleBorder(),
-          padding: EdgeInsets.all(size * 0.25),
-        ),
-        child: Text(
-          category,
-          // Se aumenta la fuente para las bolitas de categoría
-          style: const TextStyle(fontSize: 14, color: Colors.white),
-        ),
+  return SizedBox(
+    width: size,
+    height: size,
+    child: ElevatedButton(
+      onPressed: () {
+        setState(() {
+          selectedCategory = category;
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? catColor : catColor.withOpacity(0.1),
+        shape: const CircleBorder(),
+        padding: EdgeInsets.all(size * 0.25),
       ),
-    );
-  }
+      child: Text(
+        category,
+        style: TextStyle(fontSize: textFontSize, color: Colors.white),
+      ),
+    ),
+  );
+}
+
+/// Botón genérico para el diálogo.
+Widget _buildDialogButton({
+  required Widget child,
+  required Color color,
+  required double size,
+  required VoidCallback onPressed,
+}) {
+  return SizedBox(
+    width: size,
+    height: size,
+    child: ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        shape: const CircleBorder(),
+        padding: EdgeInsets.all(size * 0.25),
+      ),
+      child: child,
+    ),
+  );
+}
 
   void _handleAccept() {
     final input = _controller.text;
@@ -203,24 +230,4 @@ class _NumberInputDialogState extends State<NumberInputDialog> {
     }
   }
 
-  Widget _buildDialogButton({
-    required Widget child,
-    required Color color,
-    required double size,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          shape: const CircleBorder(),
-          padding: EdgeInsets.all(size * 0.25),
-        ),
-        child: child,
-      ),
-    );
-  }
 }

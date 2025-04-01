@@ -42,7 +42,7 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
   int rightChangeCount = 0;
   int rightWindowCount = 0;
 
-  // Listas para almacenar los detalles de las sustituciones agrupados por ventana.
+  // Listas para almacenar los detalles de las sustituciones agrupadas por ventana.
   List<List<String>> leftSubstitutionDetails = [];
   List<List<String>> rightSubstitutionDetails = [];
 
@@ -61,13 +61,16 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
 
   void _showSubstitutionDialog(String teamName, List<List<String>> changes) {
     final Size screenSize = MediaQuery.of(context).size;
-    final double substitutionFontSize = screenSize.width * 0.040;
+    // Ajusta la fuente del texto dentro de las columnas
+    final double substitutionFontSize = screenSize.width * 0.03;
+    // Ajusta el alto máximo del contenido
+    final double dialogMaxHeight = screenSize.height * 0.36;
 
     Widget titleWidget;
     if (changes.isEmpty) {
-      // Si no hay cambios, mostramos un mensaje en el área del título.
+      // Si no hay cambios, mensaje en el área del título
       titleWidget = Container(
-        height: screenSize.height * 0.360,
+        height: dialogMaxHeight,
         alignment: Alignment.center,
         child: Text(
           "No se han realizado sustituciones",
@@ -79,15 +82,14 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
         ),
       );
     } else {
-      // Calcula el ancho efectivo del diálogo (usando dialogWidthFactor = 0.7)
+      // Diálogo estilo scroll en columnas
       final double effectiveDialogWidth = screenSize.width * 0.7;
-      // Define el espacio (gap) entre columnas.
-      final double gap = 12.0;
-      // Calcula el ancho de cada columna: restamos el espacio entre columnas y dividimos entre 3,
-      // y luego restamos 0.5 para evitar overflow.
+      // Espacio entre columnas
+      final double gap = screenSize.width * 0.03;
+      // Calcula el ancho de cada columna (dividido en 3)
       final double columnWidth = ((effectiveDialogWidth - (2 * gap)) / 3) - 0.5;
 
-      // Agrupa las ventanas en tres listas (para cada columna).
+      // Agrupamos las ventanas en 3 columnas
       List<List<List<String>>> columnsData = [[], [], []];
       for (int i = 0; i < changes.length; i++) {
         columnsData[i % 3].add(changes[i]);
@@ -102,127 +104,39 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Primera columna.
-              Container(
-                width: columnWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: columnsData[0].asMap().entries.map((entry) {
-                    int localIndex = entry.key;
-                    int originalIndex = 0 + localIndex * 3;
-                    List<String> windowChanges = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Ventana ${originalIndex + 1}:",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: substitutionFontSize + 2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            windowChanges.join(", "),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: substitutionFontSize,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+              for (int col = 0; col < 3; col++) ...[
+                if (col > 0) SizedBox(width: gap),
+                Container(
+                  width: columnWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: columnsData[col].asMap().entries.map((entry) {
+                      int localIndex = entry.key;
+                      int originalIndex = col + localIndex * 3;
+                      List<String> windowChanges = entry.value;
+                      return _buildChangesColumn(
+                        windowIndex: originalIndex,
+                        windowChanges: windowChanges,
+                        fontSize: substitutionFontSize,
+                      );
+                    }).toList(),
+                  ),
                 ),
-              ),
-              SizedBox(width: gap),
-              // Segunda columna.
-              Container(
-                width: columnWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: columnsData[1].asMap().entries.map((entry) {
-                    int localIndex = entry.key;
-                    int originalIndex = 1 + localIndex * 3;
-                    List<String> windowChanges = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Ventana ${originalIndex + 1}:",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: substitutionFontSize + 2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            windowChanges.join(", "),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: substitutionFontSize,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              SizedBox(width: gap),
-              // Tercera columna.
-              Container(
-                width: columnWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: columnsData[2].asMap().entries.map((entry) {
-                    int localIndex = entry.key;
-                    int originalIndex = 2 + localIndex * 3;
-                    List<String> windowChanges = entry.value;
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Ventana ${originalIndex + 1}:",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: substitutionFontSize + 2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            windowChanges.join(", "),
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: substitutionFontSize,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
+              ],
             ],
           ),
         ),
       );
 
-      // Fija la altura del área de sustituciones para que no se expanda.
       titleWidget = Container(
-        height: screenSize.height * 0.360,
+        height: dialogMaxHeight,
         child: substitutionContent,
       );
     }
+
+    // Ajustamos el tamaño de los botones del diálogo (check) con MediaQuery
+    final double dialogButtonSize = screenSize.width * 0.15;
+    final double spacingBetweenButtons = screenSize.width * 0.02;
 
     showDialog(
       context: context,
@@ -239,8 +153,10 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
               Colors.transparent, // Para no mostrar botón de cancelar
           confirmIcon: const Icon(Icons.check, color: Colors.white),
           cancelIcon: null,
-          buttonSpacing: 10.0,
-          buttonSize: 28,
+          // Ajusta el espacio entre botones e íconos
+          buttonSpacing: spacingBetweenButtons,
+          // Ajusta el tamaño de los botones de confirmación/cancelación
+          buttonSize: dialogButtonSize,
           dialogHeightFactor: 0.55,
           dialogWidthFactor: 0.7,
           content: null,
@@ -249,29 +165,41 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
     );
   }
 
-  /// Abre la pantalla de cambios para el equipo local.
-  Future<void> _openLocalTeamChanges() async {
-    if (leftWindowCount >= 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Center(
-            child: Text(
-              "No quedan ventanas para ${widget.leftTeamName}.",
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+  /// Widget helper para armar la columna de cambios en el diálogo
+  Widget _buildChangesColumn({
+    required int windowIndex,
+    required List<String> windowChanges,
+    required double fontSize,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Ventana ${windowIndex + 1}:",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: fontSize + 2,
             ),
           ),
-          backgroundColor: const Color.fromARGB(255, 255, 80, 80),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          const SizedBox(height: 4),
+          Text(
+            windowChanges.join(", "),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: fontSize,
+            ),
           ),
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        ),
-      );
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openLocalTeamChanges() async {
+    if (leftWindowCount >= 3) {
+      _showNoWindowsSnackBar(widget.leftTeamName);
       return;
     }
     final result = await Navigator.pushNamed(
@@ -285,17 +213,13 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
       },
     );
     if (result is Map) {
-      // Se espera que la pantalla de cambios retorne un Map con la llave 'substitutionChanges',
-      // que es una lista de cadenas con los cambios realizados en esa ventana.
       final List<String>? windowChanges =
           result['substitutionChanges'] as List<String>?;
       if (windowChanges != null && windowChanges.isNotEmpty) {
         setState(() {
           leftWindowCount++;
           leftChangeCount += windowChanges.length;
-          // Agregamos los cambios como un grupo (ventana).
           leftSubstitutionDetails.add(windowChanges);
-          // Actualizamos las listas del equipo (en caso de que se hayan modificado).
           _leftNumbers = result['numbers'] as List<String>;
           _leftCategories = result['categories'] as List<String?>;
           _leftIsTitular = result['isTitular'] as List<bool>;
@@ -304,29 +228,9 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
     }
   }
 
-  /// Abre la pantalla de cambios para el equipo visitante.
   Future<void> _openVisitorTeamChanges() async {
     if (rightWindowCount >= 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Center(
-            child: Text(
-              "No quedan ventanas para ${widget.rightTeamName}.",
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-          ),
-          backgroundColor: const Color.fromARGB(255, 255, 80, 80),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        ),
-      );
+      _showNoWindowsSnackBar(widget.rightTeamName);
       return;
     }
     final result = await Navigator.pushNamed(
@@ -355,13 +259,52 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
     }
   }
 
+  /// Muestra un snackBar cuando se han agotado las ventanas de un equipo
+  void _showNoWindowsSnackBar(String teamName) {
+    final size = MediaQuery.of(context).size;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Center(
+          child: Text(
+            "No quedan ventanas para $teamName.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: size.width * 0.04,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        backgroundColor: const Color.fromARGB(255, 255, 80, 80),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(size.width * 0.03),
+        ),
+        margin: EdgeInsets.symmetric(
+          horizontal: size.width * 0.05,
+          vertical: size.height * 0.015,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    // Obtenemos las dimensiones de la pantalla
+    final Size screenSize = MediaQuery.of(context).size;
+
+    // Ajustes de tamaños relativos
+    final double titleFontSize = screenSize.width * 0.055;
+    final double leftRightPadding = 24.0; // Mantenemos el 24.0 que tú usabas
+    final double buttonVerticalPadding = screenSize.height * 0.03;
+    final double buttonSmallVerticalPadding = screenSize.height * 0.02;
+    final double buttonFontSize = screenSize.width * 0.045;
+    final double smallButtonFontSize = screenSize.width * 0.03;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(36),
+        preferredSize: const Size.fromHeight(36), // Mantiene tu altura original
         child: Container(
           color: Colors.grey[900],
           child: SafeArea(
@@ -377,26 +320,40 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                       final bool? confirm = await showDialog<bool>(
                         context: context,
                         builder: (context) {
-                          return BasicConfirmationDialog(
-                            title: Center(child: Text("Confirmar abandono")),
+                            final double confirmDialogFontSize =
+                              screenSize.width * 0.06;
+                            return BasicConfirmationDialog(
+                            title: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                              Text(
+                                "Confirmar abandono",
+                                style: TextStyle(
+                                fontSize: confirmDialogFontSize,
+                                color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 20), // Añade más espacio
+                              ],
+                            ),
                             confirmText: "",
                             cancelText: "",
                             onConfirm: () => Navigator.pop(context, true),
                             onCancel: () => Navigator.pop(context, false),
                             backgroundColor: Colors.grey[850]!,
                             confirmButtonColor:
-                                const Color.fromARGB(255, 18, 108, 210),
+                              const Color.fromARGB(255, 18, 108, 210),
                             cancelButtonColor:
-                                const Color.fromARGB(255, 242, 20, 20),
+                              const Color.fromARGB(255, 242, 20, 20),
                             confirmIcon:
-                                const Icon(Icons.check, color: Colors.white),
+                              const Icon(Icons.check, color: Colors.white),
                             cancelIcon:
-                                const Icon(Icons.close, color: Colors.white),
+                              const Icon(Icons.close, color: Colors.white),
                             buttonSpacing: 10.0,
                             buttonSize: 40,
                             dialogHeightFactor: 0.5,
                             dialogWidthFactor: 0.7,
-                          );
+                            );
                         },
                       );
                       if (confirm == true) {
@@ -415,7 +372,7 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
         builder: (context, constraints) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: leftRightPadding),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -427,7 +384,7 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                         Text(
                           "$leftChangeCount cambios \n $leftWindowCount ventanas",
                           style: TextStyle(
-                            fontSize: size.width * 0.055,
+                            fontSize: titleFontSize,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -439,13 +396,13 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                             backgroundColor: Colors.blueAccent,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
-                              vertical: size.height * 0.03,
+                              vertical: buttonVerticalPadding,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
+                            textStyle: TextStyle(
+                              fontSize: buttonFontSize,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -461,20 +418,22 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                             backgroundColor: Colors.blueAccent,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
-                              vertical: size.height * 0.02,
+                              vertical: buttonSmallVerticalPadding,
                               horizontal: 16,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 9.5,
+                            textStyle: TextStyle(
+                              fontSize: smallButtonFontSize,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           onPressed: () {
                             _showSubstitutionDialog(
-                                widget.leftTeamName, leftSubstitutionDetails);
+                              widget.leftTeamName,
+                              leftSubstitutionDetails,
+                            );
                           },
                           child: const Text("Historial"),
                         ),
@@ -490,7 +449,7 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                         Text(
                           "$rightChangeCount cambios \n $rightWindowCount ventanas",
                           style: TextStyle(
-                            fontSize: size.width * 0.055,
+                            fontSize: titleFontSize,
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),
@@ -502,13 +461,13 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                             backgroundColor: Colors.redAccent,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
-                              vertical: size.height * 0.03,
+                              vertical: buttonVerticalPadding,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 18,
+                            textStyle: TextStyle(
+                              fontSize: buttonFontSize,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -524,20 +483,22 @@ class _TeamSelectorScreenState extends State<TeamSelectorScreen> {
                             backgroundColor: Colors.redAccent,
                             foregroundColor: Colors.white,
                             padding: EdgeInsets.symmetric(
-                              vertical: size.height * 0.02,
+                              vertical: buttonSmallVerticalPadding,
                               horizontal: 16,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            textStyle: const TextStyle(
-                              fontSize: 9.5,
+                            textStyle: TextStyle(
+                              fontSize: smallButtonFontSize,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           onPressed: () {
                             _showSubstitutionDialog(
-                                widget.rightTeamName, rightSubstitutionDetails);
+                              widget.rightTeamName,
+                              rightSubstitutionDetails,
+                            );
                           },
                           child: const Text("Historial"),
                         ),

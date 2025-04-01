@@ -229,39 +229,59 @@ class _VisitorTeamChangesScreenState extends State<VisitorTeamChangesScreen> {
     final double iconSize = watchSize.width * 0.09;
     return showDialog<bool>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext dialogContext) {
+        // Obtenemos el tamaño de la pantalla para hacerlo responsivo dentro del diálogo.
+        final Size watchSize = MediaQuery.of(dialogContext).size;
+
+        // Definimos un tamaño base para íconos u otros elementos si lo deseas.
+        final double iconSize = watchSize.width * 0.08; // Ajusta a tu gusto
+
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (BuildContext context,
+              void Function(void Function()) setDialogState) {
             // Calcular el título dinámicamente, según el estado actual de substitutionChanges.
             final String titleText = showSubstitutions
-                ? (substitutionChanges.isNotEmpty
-                    ? substitutionChanges.join("\n")
-                    : "No se han realizado sustituciones")
-                : title;
+              ? (substitutionChanges.isNotEmpty
+                ? substitutionChanges.join("\n")
+                : "No se han realizado sustituciones")
+              : title;
+
             return BasicConfirmationDialog(
-              title: Text(titleText),
+              // Ajustamos el título con la fuente que quieras
+              title: Text(
+                titleText,
+                style: TextStyle(
+                  fontSize: watchSize.width * 0.06, // Escala de fuente
+                  color: Colors.white,
+                ),
+              ),
               confirmText: "",
               cancelText: "",
-              onConfirm: () => Navigator.pop(context, true),
-              onCancel: () => Navigator.pop(context, false),
+              onConfirm: () => Navigator.pop(dialogContext, true),
+              onCancel: () => Navigator.pop(dialogContext, false),
               backgroundColor: Colors.grey[850]!,
               confirmButtonColor: const Color.fromARGB(255, 18, 108, 210),
               cancelButtonColor: const Color.fromARGB(255, 242, 20, 20),
+              // Iconos ajustados con MediaQuery
               confirmIcon:
                   Icon(Icons.check, color: Colors.white, size: iconSize),
               cancelIcon:
                   Icon(Icons.close, color: Colors.white, size: iconSize),
+              // Ícono intermedio para "undo"
               middleIcon: Icon(Icons.undo, color: Colors.white, size: iconSize),
               onMiddlePressed: () {
                 _undoLastSubstitution();
                 // Al actualizar la lista y llamar a setDialogState, se recalculará titleText.
                 setDialogState(() {});
               },
+              // Sin contenido adicional
               content: const SizedBox.shrink(),
-              buttonSize: 38,
-              buttonSpacing: 15,
-              titleFontSize: watchSize.width * 0.06,
+              // Botones con tamaño responsivo
+              buttonSize: watchSize.width * 0.17,
+              buttonSpacing: watchSize.width * 0.03,
+              // Ocupa todo el ancho (puedes bajarlo a 0.9 o 0.8 si prefieres margen)
               dialogWidthFactor: 1,
+              // Controla la altura mínima del diálogo
               dialogMinHeight: watchSize.height * 0.45,
             );
           },

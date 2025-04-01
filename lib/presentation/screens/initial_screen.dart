@@ -13,7 +13,6 @@ class InitialScreen extends StatefulWidget {
   });
 
   @override
-  // ignore: library_private_types_in_public_api
   _InitialScreenState createState() => _InitialScreenState();
 }
 
@@ -38,9 +37,6 @@ class _InitialScreenState extends State<InitialScreen> {
   // Controladores para el scroll en cada lista
   final ScrollController leftScrollController = ScrollController();
   final ScrollController rightScrollController = ScrollController();
-
-  // Contador para debug: si se presiona dos veces se omiten las validaciones.
-  int _debugCheckCount = 0;
 
   @override
   void initState() {
@@ -105,11 +101,62 @@ class _InitialScreenState extends State<InitialScreen> {
     );
   }
 
+  // Función para mostrar un diálogo de error con estilo personalizado
+  void _showErrorDialog(String title, String message, double baseFontSize) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color.fromARGB(255, 34, 33, 33),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: baseFontSize + 4,
+              fontWeight: FontWeight.bold,
+              color: const Color.fromARGB(255, 255, 255, 255),
+            ),
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontSize: baseFontSize + 2,
+              color: Colors.black87,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                "Aceptar",
+                style: TextStyle(fontSize: baseFontSize + 2),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Obtenemos dimensiones de la pantalla
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Ajusta estos valores para que los círculos se vean de forma adecuada
+    final circleRadius = screenWidth * 0.07;
+    final circleTextFontSize = screenWidth * 0.05;
+    final headerFontSize = screenWidth * 0.045;
+    final paddingTop = screenHeight * 0.15;
+    final teamNameBoxWidth = screenWidth * 0.25;
+
     return Scaffold(
       backgroundColor: Colors.black,
-      // Se envuelve el contenido en un Stack para posicionar el botón central.
       body: SafeArea(
         child: Stack(
           children: [
@@ -120,18 +167,21 @@ class _InitialScreenState extends State<InitialScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      // Encabezado: nombre de equipo
+                      // Encabezado de equipo
                       Padding(
-                        padding: const EdgeInsets.only(top: 35.0, bottom: 10.0),
+                        padding: EdgeInsets.only(
+                          top: paddingTop,
+                          bottom: screenHeight * 0.015,
+                        ),
                         child: Center(
                           child: editingLeft
                               ? SizedBox(
-                                  width: 100,
+                                  width: teamNameBoxWidth,
                                   child: TextField(
                                     controller: leftTeamController,
                                     autofocus: true,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: headerFontSize,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -144,7 +194,9 @@ class _InitialScreenState extends State<InitialScreen> {
                                     decoration: const InputDecoration(
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          vertical: 4.0, horizontal: 4.0),
+                                        vertical: 4.0,
+                                        horizontal: 4.0,
+                                      ),
                                       border: OutlineInputBorder(),
                                     ),
                                   ),
@@ -157,8 +209,8 @@ class _InitialScreenState extends State<InitialScreen> {
                                   },
                                   child: Text(
                                     leftTeamName,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: headerFontSize,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -170,43 +222,43 @@ class _InitialScreenState extends State<InitialScreen> {
                       Expanded(
                         child: ListView.builder(
                           controller: leftScrollController,
+                          padding: EdgeInsets.only(bottom: screenHeight * 0.05),
                           itemCount: leftNumbers.length + 1,
                           itemBuilder: (context, index) {
                             if (index < leftNumbers.length) {
-                              Widget circle = Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: InkWell(
-                                  onTap: () {
-                                    _showNumberInputDialog(
-                                      context,
-                                      index,
-                                      leftNumbers[index],
-                                      isLeft: true,
-                                    );
-                                  },
-                                  child: CircleAvatar(
-                                    backgroundColor:
-                                        getCircleColor(leftCategories[index]),
-                                    radius: 15,
-                                    child: Text(
-                                      leftNumbers[index],
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                      ),
+                              Widget circle = InkWell(
+                                onTap: () {
+                                  _showNumberInputDialog(
+                                    context,
+                                    index,
+                                    leftNumbers[index],
+                                    isLeft: true,
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  backgroundColor:
+                                      getCircleColor(leftCategories[index]),
+                                  radius: circleRadius,
+                                  child: Text(
+                                    leftNumbers[index],
+                                    style: TextStyle(
+                                      fontSize: circleTextFontSize,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
                               );
-                              // Si es el primer jugador suplente (índice 11) mostramos la nomenclatura "supl:"
+
+                              // Si es el primer suplente (índice 11), mostramos "supl:"
                               if (leftNumbers.length > 11 && index == 11) {
                                 return Column(
                                   mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text(
+                                    Text(
                                       "supl:",
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: circleTextFontSize * 0.8,
                                         color: Colors.white70,
                                       ),
                                     ),
@@ -214,32 +266,41 @@ class _InitialScreenState extends State<InitialScreen> {
                                   ],
                                 );
                               }
-                              return circle;
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: circle,
+                              );
                             } else {
+                              // Botón para agregar jugadores
                               return Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: IconButton(
-                                  icon:
-                                      const Icon(Icons.add, color: Colors.blue),
+                                  icon: Icon(
+                                    Icons.add,
+                                    color: Colors.blue,
+                                    size: circleTextFontSize * 1.5,
+                                  ),
                                   onPressed: () {
                                     setState(() {
-                                      leftNumbers
-                                          .add('${leftNumbers.length + 1}');
+                                      leftNumbers.add(
+                                        '${leftNumbers.length + 1}',
+                                      );
                                       leftCategories.add(null);
-                                      // Los jugadores agregados más allá del once inicial son suplentes
                                       leftIsTitular.add(false);
                                     });
-                                    // Desplazar la lista para mostrar el botón "+"
                                     WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      leftScrollController.animateTo(
-                                        leftScrollController
-                                            .position.maxScrollExtent,
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                        curve: Curves.easeOut,
-                                      );
-                                    });
+                                        .addPostFrameCallback(
+                                      (_) {
+                                        leftScrollController.animateTo(
+                                          leftScrollController
+                                              .position.maxScrollExtent,
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          curve: Curves.easeOut,
+                                        );
+                                      },
+                                    );
                                   },
                                 ),
                               );
@@ -250,21 +311,36 @@ class _InitialScreenState extends State<InitialScreen> {
                     ],
                   ),
                 ),
-                // Pequeña nomenclatura en el centro (si la necesitas)
+                // Texto central (categorías)
                 Container(
-                  width: 50,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  width: screenWidth * 0.1,
+                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
-                    children: const [
-                      Text("May",
-                          style: TextStyle(color: Colors.red, fontSize: 12)),
-                      SizedBox(height: 4),
-                      Text("Med",
-                          style: TextStyle(color: Colors.blue, fontSize: 12)),
-                      SizedBox(height: 4),
-                      Text("men",
-                          style: TextStyle(color: Colors.yellow, fontSize: 12)),
+                    children: [
+                      Text(
+                        "May",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: headerFontSize,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.005),
+                      Text(
+                        "Med",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: headerFontSize,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.005),
+                      Text(
+                        "men",
+                        style: TextStyle(
+                          color: Colors.yellow,
+                          fontSize: headerFontSize,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -272,18 +348,21 @@ class _InitialScreenState extends State<InitialScreen> {
                 Expanded(
                   child: Column(
                     children: [
-                      // Encabezado: nombre de equipo
+                      // Encabezado de equipo
                       Padding(
-                        padding: const EdgeInsets.only(top: 35.0, bottom: 10.0),
+                        padding: EdgeInsets.only(
+                          top: paddingTop,
+                          bottom: screenHeight * 0.015,
+                        ),
                         child: Center(
                           child: editingRight
                               ? SizedBox(
-                                  width: 100,
+                                  width: teamNameBoxWidth,
                                   child: TextField(
                                     controller: rightTeamController,
                                     autofocus: true,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: headerFontSize,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -296,7 +375,9 @@ class _InitialScreenState extends State<InitialScreen> {
                                     decoration: const InputDecoration(
                                       isDense: true,
                                       contentPadding: EdgeInsets.symmetric(
-                                          vertical: 4.0, horizontal: 4.0),
+                                        vertical: 4.0,
+                                        horizontal: 4.0,
+                                      ),
                                       border: OutlineInputBorder(),
                                     ),
                                   ),
@@ -309,8 +390,8 @@ class _InitialScreenState extends State<InitialScreen> {
                                   },
                                   child: Text(
                                     rightTeamName,
-                                    style: const TextStyle(
-                                      fontSize: 14,
+                                    style: TextStyle(
+                                      fontSize: headerFontSize,
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                     ),
@@ -322,42 +403,42 @@ class _InitialScreenState extends State<InitialScreen> {
                       Expanded(
                         child: ListView.builder(
                           controller: rightScrollController,
+                          padding: EdgeInsets.only(bottom: screenHeight * 0.05),
                           itemCount: rightNumbers.length + 1,
                           itemBuilder: (context, index) {
                             if (index < rightNumbers.length) {
-                              Widget circle = Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: InkWell(
-                                  onTap: () {
-                                    _showNumberInputDialog(
-                                      context,
-                                      index,
-                                      rightNumbers[index],
-                                      isLeft: false,
-                                    );
-                                  },
-                                  child: CircleAvatar(
-                                    backgroundColor:
-                                        getCircleColor(rightCategories[index]),
-                                    radius: 15,
-                                    child: Text(
-                                      rightNumbers[index],
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                      ),
+                              Widget circle = InkWell(
+                                onTap: () {
+                                  _showNumberInputDialog(
+                                    context,
+                                    index,
+                                    rightNumbers[index],
+                                    isLeft: false,
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  backgroundColor:
+                                      getCircleColor(rightCategories[index]),
+                                  radius: circleRadius,
+                                  child: Text(
+                                    rightNumbers[index],
+                                    style: TextStyle(
+                                      fontSize: circleTextFontSize,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
                               );
+
                               if (rightNumbers.length > 11 && index == 11) {
                                 return Column(
                                   mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Text(
+                                    Text(
                                       "supl:",
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: circleTextFontSize * 0.8,
                                         color: Colors.white70,
                                       ),
                                     ),
@@ -365,32 +446,41 @@ class _InitialScreenState extends State<InitialScreen> {
                                   ],
                                 );
                               }
-                              return circle;
+                              return Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: circle,
+                              );
                             } else {
+                              // Botón para agregar jugadores
                               return Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: IconButton(
-                                  icon:
-                                      const Icon(Icons.add, color: Colors.red),
+                                  icon: Icon(
+                                    Icons.add,
+                                    color: Colors.red,
+                                    size: circleTextFontSize * 1.5,
+                                  ),
                                   onPressed: () {
                                     setState(() {
-                                      rightNumbers
-                                          .add('${rightNumbers.length + 1}');
+                                      rightNumbers.add(
+                                        '${rightNumbers.length + 1}',
+                                      );
                                       rightCategories.add(null);
-                                      // Los jugadores agregados más allá del once inicial son suplentes
                                       rightIsTitular.add(false);
                                     });
-                                    // Desplazar la lista para mostrar el botón "+"
                                     WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                      rightScrollController.animateTo(
-                                        rightScrollController
-                                            .position.maxScrollExtent,
-                                        duration:
-                                            const Duration(milliseconds: 300),
-                                        curve: Curves.easeOut,
-                                      );
-                                    });
+                                        .addPostFrameCallback(
+                                      (_) {
+                                        rightScrollController.animateTo(
+                                          rightScrollController
+                                              .position.maxScrollExtent,
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          curve: Curves.easeOut,
+                                        );
+                                      },
+                                    );
                                   },
                                 ),
                               );
@@ -403,157 +493,101 @@ class _InitialScreenState extends State<InitialScreen> {
                 ),
               ],
             ),
-            // Botón central con una palomita (check) en el centro de la vista.
+            // Botón central (check)
             Align(
               alignment: Alignment.center,
               child: SizedBox(
-                width: 40, // Ajusta el tamaño según lo necesites
-                height: 40,
+                width: screenWidth * 0.15,
+                height: screenWidth * 0.15,
                 child: FloatingActionButton(
                   backgroundColor: Colors.green,
                   onPressed: () {
-                    // Incrementa el contador para debug.
-                    _debugCheckCount++;
-                    // Si se presiona 2 o más veces, omite las validaciones.
-                    if (_debugCheckCount >= 2) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => TeamSelectorScreen(
-                            leftTeamName: leftTeamName,
-                            rightTeamName: rightTeamName,
-                            leftNumbers: leftNumbers,
-                            leftCategories: leftCategories,
-                            rightNumbers: rightNumbers,
-                            rightCategories: rightCategories,
-                            leftIsTitular: leftIsTitular,
-                            rightIsTitular: rightIsTitular,
-                          ),
-                        ),
+                    // Validación 1: que cada equipo tenga al menos 11 jugadores.
+                    if (leftNumbers.length < 11 || rightNumbers.length < 11) {
+                      _showErrorDialog(
+                        "Error de validación",
+                        "Ambos equipos deben tener al menos 11 jugadores.",
+                        headerFontSize,
                       );
                       return;
                     }
 
-                    // Validación para el equipo izquierdo
+                    // Validaciones adicionales para equipo izquierdo
                     List<String> leftErrors = [];
+
                     if (leftNumbers.toSet().length != leftNumbers.length) {
-                      leftErrors.add(
-                          "No se pueden repetir números en el equipo $leftTeamName.");
+                      leftErrors.add("No se pueden repetir números en el equipo $leftTeamName.");
                     }
+
                     int leftMedCount = 0;
                     int leftMenCount = 0;
                     for (int i = 0; i < leftNumbers.length; i++) {
                       if (leftIsTitular[i]) {
-                        if (leftCategories[i] == "Med" ||
-                            leftCategories[i] == "men") {
+                        if (leftCategories[i] == "Med") {
                           leftMedCount++;
-                        }
-                        if (leftCategories[i] == "men") {
+                        } else if (leftCategories[i] == "men") {
                           leftMenCount++;
                         }
                       }
                     }
-                    bool leftValid = (leftMedCount >= 2 && leftMenCount >= 1) ||
-                        (leftMenCount >= 3);
+
+                    bool leftValid = ((leftMedCount >= 2 && leftMenCount >= 1) ||
+                        (leftMenCount >= 2 && leftMedCount >= 1) ||
+                        (leftMenCount >= 3));
                     if (!leftValid) {
                       leftErrors.add(
-                          "El equipo $leftTeamName debe tener al menos 2 medianos (o 3 menores) y 1 menor entre los titulares.");
+                        "El equipo $leftTeamName debe tener:\n"
+                        "- 2 medianos y 1 menor, o\n"
+                        "- 2 menores y 1 mediano, o\n"
+                        "- 3 menores (entre los titulares)."
+                      );
                     }
 
-                    // Validación para el equipo derecho
+                    // Validaciones adicionales para equipo derecho
                     List<String> rightErrors = [];
                     if (rightNumbers.toSet().length != rightNumbers.length) {
-                      rightErrors.add(
-                          "No se pueden repetir números en el equipo $rightTeamName.");
+                      rightErrors.add("No se pueden repetir números en el equipo $rightTeamName.");
                     }
                     int rightMedCount = 0;
                     int rightMenCount = 0;
                     for (int i = 0; i < rightNumbers.length; i++) {
                       if (rightIsTitular[i]) {
-                        if (rightCategories[i] == "Med" ||
-                            rightCategories[i] == "men") {
+                        if (rightCategories[i] == "Med") {
                           rightMedCount++;
-                        }
-                        if (rightCategories[i] == "men") {
+                        } else if (rightCategories[i] == "men") {
                           rightMenCount++;
                         }
                       }
                     }
-                    bool rightValid =
-                        (rightMedCount >= 2 && rightMenCount >= 1) ||
-                            (rightMenCount >= 3);
+
+                    bool rightValid = ((rightMedCount >= 2 && rightMenCount >= 1) ||
+                        (rightMenCount >= 2 && rightMedCount >= 1) ||
+                        (rightMenCount >= 3));
                     if (!rightValid) {
                       rightErrors.add(
-                          "El equipo $rightTeamName debe tener al menos 2 medianos (o 3 menores) y 1 menor entre los titulares.");
+                        "El equipo $rightTeamName debe tener:\n"
+                        "- 2 medianos y 1 menor, o\n"
+                        "- 2 menores y 1 mediano, o\n"
+                        "- 3 menores (entre los titulares)."
+                      );
                     }
 
-                    // Si hay errores, se muestran en un AlertDialog.
                     if (leftErrors.isNotEmpty || rightErrors.isNotEmpty) {
                       String errorMessage = "";
                       if (leftErrors.isNotEmpty) {
-                      errorMessage += leftErrors.join("\n");
+                        errorMessage += leftErrors.join("\n");
                       }
                       if (rightErrors.isNotEmpty) {
-                      if (errorMessage.isNotEmpty) {
-                        errorMessage += "\n";
+                        if (errorMessage.isNotEmpty) {
+                          errorMessage += "\n";
+                        }
+                        errorMessage += rightErrors.join("\n");
                       }
-                      errorMessage += rightErrors.join("\n");
-                      }
-                      showDialog(
-                      context: context,
-                      builder: (context) {
-                        return AlertDialog(
-                        backgroundColor: Colors.grey[900],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        title: const Center(
-                          child: Text(
-                          "Verifica los equipos",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          ),
-                        ),
-                        content: SingleChildScrollView(
-                          child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const SizedBox(height: 10),
-                            // Errores específicos detectados.
-                            Text(
-                            errorMessage,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                            textAlign: TextAlign.right,
-                            ),
-                          ],
-                          ),
-                        ),
-                        actions: [
-                          Center(
-                          child: TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text(
-                            "Aceptar",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.blue,
-                            ),
-                            ),
-                          ),
-                          ),
-                        ],
-                        );
-                      },
-                      );
+                      _showErrorDialog("Error de validación", errorMessage, headerFontSize);
                       return;
                     }
 
-                    // Si las validaciones se cumplen, se procede a la siguiente pantalla.
+                    // Si no hay errores, pasa a la siguiente pantalla
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => TeamSelectorScreen(
@@ -569,10 +603,14 @@ class _InitialScreenState extends State<InitialScreen> {
                       ),
                     );
                   },
-                  child: const Icon(Icons.check, color: Colors.white, size: 20),
+                  child: Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: headerFontSize,
+                  ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),

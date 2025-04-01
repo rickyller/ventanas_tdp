@@ -21,12 +21,11 @@ android {
 
 defaultConfig {
     applicationId "com.example.ventanas_tdp"
-    minSdk = 23 // Cambiado de flutter.minSdkVersion a 23
+    minSdk = 26 // ← este es el mínimo para Wear OS 3+
     targetSdk = flutter.targetSdkVersion
     versionCode = flutter.versionCode
     versionName = flutter.versionName
 }
-
 
     buildTypes {
         release {

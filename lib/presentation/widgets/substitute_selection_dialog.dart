@@ -36,36 +36,52 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasSelection = selected.any((element) => element);
+    // Obtenemos el tamaño de la pantalla para cálculos responsivos
     final Size screenSize = MediaQuery.of(context).size;
+
+    // Definimos variables para tamaños y fuentes
+    final double headerFontSize = screenSize.width * 0.055;
+    final double backIconSize = screenSize.width * 0.1;
+    final double circleAvatarRadius = screenSize.width * 0.06;
+    final double circleAvatarFontSize = screenSize.width * 0.065;
+    final double categoryFontSize = screenSize.width * 0.055;
+    final double confirmButtonHeight = screenSize.height * 0.15;
+    final double confirmButtonFontSize = screenSize.width * 0.06;
+
+    // Comprobamos si hay alguna selección
+    final bool hasSelection = selected.any((element) => element);
 
     return SafeArea(
       child: Container(
+        // Color de fondo y esquinas redondeadas
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        padding: const EdgeInsets.all(8),
+        // Usamos el alto total de la pantalla (puedes reducirlo si quieres)
         height: screenSize.height,
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Encabezado
+            // Encabezado (título + botón back)
             SizedBox(
               height: screenSize.height * 0.25,
               child: Stack(
                 children: [
+                  // Título centrado
                   Center(
                     child: Text(
                       'Suplentes disponibles',
                       style: TextStyle(
-                        fontSize: screenSize.width * 0.055,
+                        fontSize: headerFontSize,
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
+                  // Botón de volver (arriba, superpuesto)
                   Positioned(
                     left: 0,
                     right: 0,
@@ -75,7 +91,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                       icon: Icon(
                         Icons.arrow_back,
                         color: Colors.white,
-                        size: screenSize.width * 0.1,
+                        size: backIconSize,
                       ),
                       onPressed: () => Navigator.pop(context),
                     ),
@@ -90,12 +106,9 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                 itemCount: widget.availableNumbers.length,
                 itemBuilder: (context, index) {
                   return Container(
-                    // Ajusta aquí el margen para disminuir la separación
                     margin: const EdgeInsets.only(bottom: 0),
                     child: ListTile(
-                      // Hace el ListTile más compacto
                       dense: true,
-                      // También puedes controlar el padding interno
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 0,
@@ -104,14 +117,14 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                           ? Colors.white12
                           : Colors.transparent,
                       leading: CircleAvatar(
-                        radius: screenSize.width * 0.06,
+                        radius: circleAvatarRadius,
                         backgroundColor:
                             getCircleColor(widget.availableCategories[index]),
                         child: Text(
                           widget.availableNumbers[index],
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: screenSize.width * 0.065,
+                            fontSize: circleAvatarFontSize,
                           ),
                         ),
                       ),
@@ -119,7 +132,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                         widget.availableCategories[index] ?? 'S/C',
                         style: TextStyle(
                           color: Colors.white70,
-                          fontSize: screenSize.width * 0.055,
+                          fontSize: categoryFontSize,
                         ),
                       ),
                       trailing: Icon(
@@ -130,6 +143,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                       ),
                       onTap: () {
                         setState(() {
+                          // Solo se permite seleccionar uno, así que deseleccionamos todos
                           for (int i = 0; i < selected.length; i++) {
                             selected[i] = false;
                           }
@@ -144,7 +158,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
 
             // Botón de Confirmar
             SizedBox(
-              height: screenSize.height * 0.15,
+              height: confirmButtonHeight,
               child: ElevatedButton(
                 onPressed: hasSelection
                     ? () {
@@ -166,7 +180,7 @@ class _SubstituteSelectionDialogState extends State<SubstituteSelectionDialog> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   textStyle: TextStyle(
-                    fontSize: screenSize.width * 0.06,
+                    fontSize: confirmButtonFontSize,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
